@@ -21,9 +21,9 @@ const PRODUCTS = [
     { id: "brain-s", label: "சிறியது", price: 120 },
     { id: "brain-l", label: "பெரியது", price: 150 } ] },
   { id: "spleen", name: "பல்குத்தி / மண்ணீரல்", kind: "unit", variants: [
-    { id: "spleen-s", label: "சிறியது", price: 150 },
-    { id: "spleen-l", label: "பெரியது", price: 200 } ] },
-  { id: "kudal", name: "குடல்", kind: "kg", price: 200, min: 1 },
+    { id: "spleen-s", label: "சிறியது", price: 120 },
+    { id: "spleen-l", label: "பெரியது", price: 150 } ] },
+  { id: "kudal", name: "குடல்", kind: "kg", price: 200, min: 1, step: 1 },
   { id: "kidney", name: "கிட்னி", kind: "unit", price: 120, per: "கால் கிலோ", unit: "கால் கிலோ" },
   { id: "tail", name: "வால்", kind: "unit", variants: [
     { id: "tail-s", label: "சிறியது", price: 180 },
@@ -32,7 +32,7 @@ const PRODUCTS = [
 
 const LINES = PRODUCTS.flatMap(p => p.variants
   ? p.variants.map(v => ({ id: v.id, name: v.label ? `${p.name} – ${v.label}` : p.name, price: v.price, kind: "unit", unit: v.unit || "பீஸ்" }))
-  : [{ id: p.id, name: p.name, price: p.price, kind: p.kind, unit: p.unit || "கிலோ", q250: p.q250, min: p.min }]);
+  : [{ id: p.id, name: p.name, price: p.price, kind: p.kind, unit: p.unit || "கிலோ", q250: p.q250, min: p.min, step: p.step }]);
 
 const fmtQty = (l, q) => {
   if (l.kind !== "kg") return `${q} ${l.unit}`;
@@ -43,7 +43,7 @@ const fmtQty = (l, q) => {
 const nextSunday = () => { const d = new Date(), add = (7 - d.getDay()) % 7 || 7; d.setDate(d.getDate() + add); return d; };
 
 function Qty({ line, q, set }) {
-  const step = line.kind === "kg" ? 0.25 : 1;
+  const step = line.step || (line.kind === "kg" ? 0.25 : 1);
   return (
     <div className="qty">
       <button aria-label="குறை" onClick={() => { const n = +(q - step).toFixed(2); set(line.id, n < (line.min || 0) ? 0 : Math.max(0, n)); }}>−</button>
@@ -150,7 +150,7 @@ export default function App() {
                   )) : (
                     <>
                       <div className="row"><span className="price">₹{p.price} / {p.per || "கிலோ"}</span></div>
-                      {p.min && <div className="minnote">குறைந்தபட்சம் {p.min} கிலோ</div>}
+                      {p.min && <div className="minnote">குறைந்தபட்சம் {p.min} கிலோ (1, 2, 3 கிலோ…)</div>}
                       <div className="row center"><Qty line={LINES.find(x => x.id === p.id)} q={cart[p.id] || 0} set={setQ} /></div>
                     </>
                   )}
