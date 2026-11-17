@@ -92,3 +92,5 @@ summary{cursor:pointer;font-weight:700;color:var(--red);padding:6px 0}
 .qty button{background:var(--green);color:#fff;border:0;width:36px;height:36px;font-weight:700;box-shadow:0 2px 0 #0b3a1e}
 .qty button:hover{background:var(--green2)}
 .qty span{background:#fff;border:2px solid var(--yellow);border-radius:999px;padding:3px 10px;min-width:84px}
+
+.qty span{min-width:104px;font-size:.85rem}

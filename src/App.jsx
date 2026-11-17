@@ -9,14 +9,14 @@ const photoFor = id => Object.entries(photos).find(([p]) => p.split("/").pop().s
 
 const PHONE = "7601915355", WA = "917601915355";
 const PHONE_SHOW = "7601 915355";
-const PAYEE = { name: "FATHIMA FARZANA S.J", mobile: "9444492852" };
+const PAYEE = { name: "FATHIMA FARZANA S.J", mobile: "9444492854" };
 const SHOP = "காயல் ஃப்ரெஷ் மீட்";
 
 const PRODUCTS = [
-  { id: "beef", name: "பீஃப்", kind: "kg", price: 450 },
+  { id: "beef", name: "பீஃப்", kind: "kg", price: 450, q250: 120 },
   { id: "thanikari", name: "தனி கறி", kind: "kg", price: 480 },
   { id: "kottu", name: "கொத்துக்கறி", kind: "kg", price: 480 },
-  { id: "liver", name: "ஈரல்", kind: "kg", price: 450 },
+  { id: "liver", name: "ஈரல்", kind: "kg", price: 450, q250: 120 },
   { id: "brain", name: "மூளை", kind: "unit", variants: [
     { id: "brain-s", label: "சிறியது", price: 120 },
     { id: "brain-l", label: "பெரியது", price: 150 } ] },
@@ -32,13 +32,18 @@ const PRODUCTS = [
 
 const LINES = PRODUCTS.flatMap(p => p.variants
   ? p.variants.map(v => ({ id: v.id, name: v.label ? `${p.name} – ${v.label}` : p.name, price: v.price, kind: "unit", unit: v.unit || "பீஸ்" }))
-  : [{ id: p.id, name: p.name, price: p.price, kind: p.kind, unit: p.unit || "கிலோ" }]);
+  : [{ id: p.id, name: p.name, price: p.price, kind: p.kind, unit: p.unit || "கிலோ", q250: p.q250 }]);
 
-const fmtQty = (l, q) => `${q} ${l.unit}`;
+const fmtQty = (l, q) => {
+  if (l.kind !== "kg") return `${q} ${l.unit}`;
+  const g = Math.round(q * 1000), kg = Math.floor(g / 1000), rem = g % 1000;
+  if (!kg) return `${rem} கிராம்`;
+  return `${kg} கிலோ${rem ? ` ${rem} கிராம்` : ""}`;
+};
 const nextSunday = () => { const d = new Date(), add = (7 - d.getDay()) % 7 || 7; d.setDate(d.getDate() + add); return d; };
 
 function Qty({ line, q, set }) {
-  const step = line.kind === "kg" ? 0.5 : 1;
+  const step = line.kind === "kg" ? 0.25 : 1;
   return (
     <div className="qty">
       <button aria-label="குறை" onClick={() => set(line.id, Math.max(0, +(q - step).toFixed(2)))}>−</button>
@@ -59,7 +64,7 @@ export default function App() {
   const [copied, setCopied] = useState(false);
 
   const setQ = (id, q) => setCart(c => ({ ...c, [id]: q }));
-  const items = LINES.filter(l => cart[l.id] > 0).map(l => ({ ...l, q: cart[l.id], amt: Math.round(l.price * cart[l.id]) }));
+  const items = LINES.filter(l => cart[l.id] > 0).map(l => ({ ...l, q: cart[l.id], amt: l.q250 && cart[l.id] === 0.25 ? l.q250 : Math.round(l.price * cart[l.id]) }));
   const total = items.reduce((s, i) => s + i.amt, 0);
   const sunStr = nextSunday().toLocaleDateString("ta-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const isSunday = new Date().getDay() === 0;
