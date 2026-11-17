@@ -14,16 +14,20 @@ const SHOP = "காயல் ஃப்ரெஷ் மீட்";
 
 const PRODUCTS = [
   { id: "beef", name: "பீஃப்", kind: "kg", price: 450 },
+  { id: "thanikari", name: "தனி கறி", kind: "kg", price: 480 },
   { id: "kottu", name: "கொத்துக்கறி", kind: "kg", price: 480 },
   { id: "liver", name: "ஈரல்", kind: "kg", price: 450 },
   { id: "brain", name: "மூளை", kind: "unit", variants: [
-    { id: "brain-s", label: "சிறியது (1 பீஸ்)", price: 120 },
-    { id: "brain-l", label: "பெரியது (1 பீஸ்)", price: 150 } ] },
+    { id: "brain-s", label: "சிறியது", price: 120 },
+    { id: "brain-l", label: "பெரியது", price: 150 } ] },
   { id: "spleen", name: "பல்குத்தி / மண்ணீரல்", kind: "unit", variants: [
-    { id: "spleen-s", label: "சிறியது (1 பீஸ்)", price: 150 },
-    { id: "spleen-l", label: "பெரியது (1 பீஸ்)", price: 200 } ] },
+    { id: "spleen-s", label: "சிறியது", price: 150 },
+    { id: "spleen-l", label: "பெரியது", price: 200 } ] },
   { id: "kudal", name: "குடல்", kind: "kg", price: 200 },
   { id: "kidney", name: "கிட்னி", kind: "unit", price: 120, per: "கால் கிலோ", unit: "கால் கிலோ" },
+  { id: "tail", name: "வால்", kind: "unit", variants: [
+    { id: "tail-s", label: "சிறியது", price: 180 },
+    { id: "tail-l", label: "பெரியது", price: 350 } ] },
 ];
 
 const LINES = PRODUCTS.flatMap(p => p.variants
@@ -46,7 +50,7 @@ function Qty({ line, q, set }) {
 
 export default function App() {
   const [cart, setCart] = useState({});
-  const [f, setF] = useState({ name: "", mobile: "", alt: "", address: "", landmark: "", area: "", pin: "", notes: "" });
+  const [f, setF] = useState({ name: "", mobile: "", alt: "", address: "", landmark: "", area: "காயல்பட்டணம்", notes: "" });
   const [errs, setErrs] = useState({});
   const [sheet, setSheet] = useState(false);
   const [step, setStep] = useState(1);
@@ -85,7 +89,6 @@ export default function App() {
     `முகவரி: ${f.address}`,
     f.landmark ? `அடையாளம்: ${f.landmark}` : false,
     `பகுதி: ${f.area}`,
-    f.pin ? `பின்கோடு: ${f.pin}` : false,
     f.notes ? `குறிப்பு: ${f.notes}` : false, "",
     `பணம் செலுத்தப்பட்டது (ஜிபே / போன்பே) – ${PAYEE.name} (${PAYEE.mobile}). பணம் செலுத்திய ஸ்கிரீன்ஷாட்டை அனுப்புகிறேன்.`
   ].filter(x => x !== false).join("\n");
@@ -197,7 +200,7 @@ export default function App() {
                 <input value={f.address} onChange={up("address")} placeholder="வீட்டு எண், தெருவின் பெயர்" />
                 {errs.address && <div className="err">{errs.address}</div>}
                 <label>பகுதி / இடம் *</label>
-                <input value={f.area} onChange={up("area")} placeholder="எ.கா. காயல்பட்டினம்" />
+                <input value={f.area} onChange={up("area")} placeholder="பகுதி / இடம்" />
                 {errs.area && <div className="err">{errs.area}</div>}
                 <details>
                   <summary>+ கூடுதல் விவரங்கள் (விருப்பம்)</summary>
@@ -205,8 +208,6 @@ export default function App() {
                   <input value={f.alt} onChange={up("alt")} inputMode="numeric" maxLength={10} />
                   <label>அடையாளம் / கூகுள் மேப் இணைப்பு</label>
                   <input value={f.landmark} onChange={up("landmark")} placeholder="பள்ளிவாசல், கடை அருகில்" />
-                  <label>பின்கோடு</label>
-                  <input value={f.pin} onChange={up("pin")} inputMode="numeric" maxLength={6} />
                   <label>சிறப்பு குறிப்புகள்</label>
                   <input value={f.notes} onChange={up("notes")} placeholder="பீஸ் அளவு, சுத்தம் போன்றவை" />
                 </details>
