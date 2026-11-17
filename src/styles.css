@@ -124,3 +124,5 @@ summary{cursor:pointer;font-weight:700;color:var(--red);padding:6px 0}
 .panel .btn.wa{background:linear-gradient(135deg,var(--green2),var(--green));border-bottom:4px solid #0b3a1e;padding:13px}
 .panel .btn.wa[disabled]{border-bottom-width:4px}
 .panel .chk{background:#fff;border:2px solid var(--yellow);border-radius:12px;padding:10px 12px;font-weight:700;color:var(--green)}
+
+.minnote{margin-top:6px;font-size:.8rem;font-weight:700;color:var(--red)}
