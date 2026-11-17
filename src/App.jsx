@@ -13,10 +13,10 @@ const PAYEE = { name: "FATHIMA FARZANA S.J", mobile: "9444492854" };
 const SHOP = "காயல் ஃப்ரெஷ் மீட்";
 
 const PRODUCTS = [
-  { id: "beef", name: "பீஃப்", kind: "kg", price: 450, q250: 120 },
+  { id: "beef", name: "பீஃப்", kind: "kg", price: 450, q250: 115 },
   { id: "thanikari", name: "தனி கறி", kind: "kg", price: 480 },
   { id: "kottu", name: "கொத்துக்கறி", kind: "kg", price: 480 },
-  { id: "liver", name: "ஈரல்", kind: "kg", price: 450, q250: 120 },
+  { id: "liver", name: "ஈரல்", kind: "kg", price: 450, q250: 115 },
   { id: "brain", name: "மூளை", kind: "unit", variants: [
     { id: "brain-s", label: "சிறியது", price: 120 },
     { id: "brain-l", label: "பெரியது", price: 150 } ] },
@@ -182,10 +182,10 @@ export default function App() {
         <div className="modal" onClick={() => setSheet(false)}>
           <div className="panel" onClick={e => e.stopPropagation()}>
             <div className="phead">
-              <b>{step === 1 ? "படி 1/2 – டெலிவரி விவரங்கள்" : "படி 2/2 – பணம் செலுத்த"}</b>
+              <div><small>{SHOP}</small><b>{step === 1 ? "🛵 டெலிவரி விவரங்கள்" : "💳 பணம் செலுத்த"}</b></div>
               <button className="x" aria-label="மூடு" onClick={() => setSheet(false)}>✕</button>
             </div>
-            <div className="bar"><i style={{ width: step === 1 ? "50%" : "100%" }} /></div>
+            <div className="steps"><span className="dot on">1</span><i className={step === 2 ? "on" : ""} /><span className={"dot" + (step === 2 ? " on" : "")}>2</span></div>
 
             {step === 1 ? (
               <>
@@ -221,6 +221,7 @@ export default function App() {
               </>
             ) : (
               <>
+                <div className="amt"><small>செலுத்த வேண்டிய தொகை</small>₹{total}</div>
                 <p style={{ margin: "12px 0 4px" }}>ஆர்டர் செய்யும் முன், <b>₹{total}</b> தொகையை <b>ஜிபே / போன்பே</b> மூலம் கீழ்க்கண்ட எண்ணுக்கு செலுத்தவும்:</p>
                 <div className="pay">
                   <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
