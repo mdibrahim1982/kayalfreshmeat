@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Art from "./Art.jsx";
 import bannerImg from "./assets/banner.png";
 import footerImg from "./assets/footer.png";
+import QRCode from "qrcode";
 import qrImg from "./assets/gpay-qr.png";
 import gpayIcon from "./assets/gpay-icon.png";
 
@@ -14,11 +15,15 @@ const ORDER_ENDPOINT = import.meta.env.VITE_ORDER_ENDPOINT;
 const PHONE = "7601915355", WA = "917601915355";
 const PHONE_SHOW = "7601 915355";
 const PAYEE = { name: "FATHIMA FARZANA S.J", mobile: "9444492854" };
+// Dynamic UPI QR: same payee as the old static QR, but the order amount is filled in automatically
+const UPI_ID = "fathma.ibrahm-1@okicici", UPI_AID = "uGICAgIDNwczzAQ";
+const upiLink = (amount, orderId) =>
+  `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent("Fathima Farzana s.j")}&aid=${UPI_AID}&am=${Number(amount).toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order " + orderId)}`;
 const SHOP = "காயல் ஃப்ரெஷ் மீட்";
 
 const PRODUCTS = [
   { id: "beef", name: "பீஃப்", kind: "kg", price: 450, q250: 115 },
-  { id: "thanikari", name: "தனி கறி", kind: "kg", price: 480 },
+  { id: "thanikari", name: "தனி கறி", kind: "kg", price: 500 },
   { id: "kottu", name: "கொத்துக்கறி", kind: "kg", price: 480 },
   { id: "liver", name: "ஈரல்", kind: "kg", price: 450, q250: 115 },
   { id: "brain", name: "மூளை", kind: "unit", variants: [
@@ -28,7 +33,7 @@ const PRODUCTS = [
     { id: "spleen-s", label: "சிறியது", price: 120 },
     { id: "spleen-l", label: "பெரியது", price: 150 } ] },
   { id: "kudal", name: "குடல்", kind: "kg", price: 200, min: 1, step: 1 },
-  { id: "kidney", name: "கிட்னி", kind: "unit", price: 120, per: "கால் கிலோ", unit: "கால் கிலோ" },
+  { id: "kidney", name: "கிட்னி", kind: "kg", price: 480, showPrice: 120, per: "250 கிராம்" },
   { id: "tail", name: "வால்", kind: "unit", variants: [
     { id: "tail-s", label: "சிறியது", price: 180 },
     { id: "tail-l", label: "பெரியது", price: 350 } ] },
@@ -96,6 +101,15 @@ export default function App() {
   const setQ = (id, q) => setCart(c => ({ ...c, [id]: q }));
   const items = LINES.filter(l => cart[l.id] > 0).map(l => ({ ...l, q: cart[l.id], amt: l.q250 && cart[l.id] === 0.25 ? l.q250 : Math.round(l.price * cart[l.id]) }));
   const total = items.reduce((s, i) => s + i.amt, 0);
+  const [qrUrl, setQrUrl] = useState("");
+  useEffect(() => {
+    if (!sheet || step !== 2 || !total) return;
+    let live = true;
+    QRCode.toDataURL(upiLink(total, orderId), { width: 480, margin: 2, errorCorrectionLevel: "M" })
+      .then(u => { if (live) setQrUrl(u); })
+      .catch(() => { if (live) setQrUrl(""); });
+    return () => { live = false; };
+  }, [sheet, step, total, orderId]);
   const sunStr = nextSunday(now).toLocaleDateString("ta-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const up = k => e => setF({ ...f, [k]: e.target.value });
 
@@ -130,7 +144,7 @@ export default function App() {
   const msg = () => [
     `*புதிய முன்பதிவு – ${SHOP}*`,
     `ஆர்டர் எண்: #${orderId}`,
-    `டெலிவரி: ${sunStr} (காலை 9.30 – 11.15)`, "",
+    `டெலிவரி: ${sunStr} (காலை 9.30 – 11.30)`, "",
     "*பொருட்கள்*",
     ...items.map(i => `• ${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`),
     `*மொத்தம்: ₹${total}*`, "",
@@ -161,8 +175,7 @@ export default function App() {
       <div style={{ fontSize: 56 }}>✅</div>
       <h2>நன்றி, {f.name}!</h2>
       <p>உங்கள் முன்பதிவு வாட்ஸ்அப்பில் தயாராக உள்ளது. செய்தியை அனுப்பி, பணம் செலுத்திய ஸ்கிரீன்ஷாட்டையும் பகிர்ந்து உறுதிசெய்யவும்.</p>
-      <p><b>டெலிவரி:</b> {sunStr}, காலை 9.30 – 11.15</p>
-      <div className="disc">வாடிக்கையாளரின் இடம் மற்றும் தூரத்தைப் பொறுத்து டெலிவரி நேரம் மாறுபடலாம்.</div>
+      <p><b>டெலிவரி:</b> {sunStr}, காலை 9.30 – 11.30</p>
       <div className="cta" style={{ justifyContent: "center" }}>
         <button className="btn" onClick={() => { setDone(false); setCart({}); }}>புதிய ஆர்டர்</button>
         <a className="btn wa" href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer">வாட்ஸ்அப் திறக்க</a>
@@ -175,7 +188,7 @@ export default function App() {
       <div className="wrap herowrap"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
       <div className="wrap">
         <div className="banner">
-          <div className="bk">📅 திங்கள் முதல் சனி வரை முன்பதிவு · 🛵 ஞாயிறு காலை 9.30 – 11.15 டெலிவரி</div>
+          <div className="bk">📅 திங்கள் முதல் சனி வரை முன்பதிவு · 🛵 ஞாயிறு காலை 9.30 – 11.30 டெலிவரி</div>
           <div className="when">அடுத்த டெலிவரி தேதி: <b>{sunStr}</b></div>
           <div className="cta">
             <a className="btn" href={`tel:+91${PHONE}`}>📞 {PHONE_SHOW}</a>
@@ -200,7 +213,7 @@ export default function App() {
                     </div>
                   )) : (
                     <>
-                      <div className="row"><span className="price">₹{p.price} / {p.per || "கிலோ"}</span></div>
+                      <div className="row"><span className="price">₹{p.showPrice ?? p.price} / {p.per || "கிலோ"}</span></div>
                       <div className="row center"><Qty line={LINES.find(x => x.id === p.id)} q={cart[p.id] || 0} set={setQ} /></div>
                     </>
                   )}
@@ -210,7 +223,6 @@ export default function App() {
           })}
         </div>
         <div className="disc">📷 <b>குறிப்பு:</b> பொருட்களின் படங்கள் குறிப்புக்காக மட்டுமே. அவை உண்மையான பொருட்கள் அல்ல.</div>
-        <div className="disc">⚠️ <b>குறிப்பு:</b> வாடிக்கையாளரின் இடம் மற்றும் தூரத்தைப் பொறுத்து டெலிவரி நேரம் மாறுபடலாம்.</div>
       </div>
 
       <footer style={{ paddingBottom: items.length ? 96 : undefined }}>
@@ -269,17 +281,15 @@ export default function App() {
                   <label>சிறப்பு குறிப்புகள்</label>
                   <input value={f.notes} onChange={up("notes")} placeholder="பீஸ் அளவு, சுத்தம் போன்றவை" />
                 </details>
-                <div className="disc">⚠️ வாடிக்கையாளரின் இடம் மற்றும் தூரத்தைப் பொறுத்து டெலிவரி நேரம் மாறுபடலாம்.</div>
                 <button className="btn big" onClick={next}>அடுத்து: பணம் செலுத்த →</button>
               </>
             ) : (
               <>
                 <div className="amt"><small>செலுத்த வேண்டிய தொகை · ஆர்டர் #{orderId}</small>₹{total}</div>
-                <p style={{ margin: "12px 0 4px" }}><b>₹{total}</b> தொகையை <span className="app"><b>ஜிபே</b><GPayIcon /></span> / <span className="app"><b>போன்பே</b><PhonePeIcon /></span> மூலம் செலுத்தவும். க்யூஆர் கோடை ஸ்கேன் செய்யவும் அல்லது கீழ்க்கண்ட எண்ணுக்கு அனுப்பவும்:</p>
                 <div className="qrbox">
-                  <img className="qr" src={qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
-                  <small>இந்த க்யூஆர் கோடை ஜிபே, போன்பே இரண்டிலும் ஸ்கேன் செய்யலாம்.</small>
-                  <a className="btn ghost sm" href={qrImg} download="kayal-fresh-meat-qr.png">⬇ க்யூஆர் படத்தை சேமிக்க</a>
+                  <img className="qr" src={qrUrl || qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
+                  <small>இந்த க்யூஆர் கோடை ஸ்கேன் செய்தால் ₹{total} தொகை தானாக வரும். ஜிபே, போன்பே இரண்டிலும் ஸ்கேன் செய்யலாம்.</small>
+                  <a className="btn ghost sm" href={qrUrl || qrImg} download="kayal-fresh-meat-qr.png">⬇ க்யூஆர் படத்தை சேமிக்க</a>
                 </div>
                 <div className="pay">
                   <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
