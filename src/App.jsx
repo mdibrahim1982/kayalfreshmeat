@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Art from "./Art.jsx";
 import bannerImg from "./assets/banner.png";
 import footerImg from "./assets/footer.png";
+import qrImg from "./assets/gpay-qr.png";
+import gpayIcon from "./assets/gpay-icon.png";
 
 // Real photos: drop files named <id>.jpg / .png / .webp into src/assets/products/
 const photos = import.meta.glob("./assets/products/*.{jpg,jpeg,png,webp}", { eager: true, import: "default" });
@@ -40,7 +42,15 @@ const fmtQty = (l, q) => {
   if (!kg) return `${rem} கிராம்`;
   return `${kg} கிலோ${rem ? ` ${rem} கிராம்` : ""}`;
 };
-const nextSunday = () => { const d = new Date(), add = (7 - d.getDay()) % 7 || 7; d.setDate(d.getDate() + add); return d; };
+const nextSunday = (base = new Date()) => { const d = new Date(base), add = (7 - d.getDay()) % 7 || 7; d.setDate(d.getDate() + add); return d; };
+
+const PhonePeIcon = () => (
+  <svg className="appicon" viewBox="0 0 48 48" aria-hidden="true">
+    <circle cx="24" cy="24" r="24" fill="#5f259f" />
+    <path d="M17 12h15v4H22v5h8v4h-8v11h-5z" fill="#fff" />
+  </svg>
+);
+const GPayIcon = () => <img className="appicon" src={gpayIcon} alt="" />;
 
 function Qty({ line, q, set }) {
   const step = line.step || (line.kind === "kg" ? 0.25 : 1);
@@ -62,12 +72,18 @@ export default function App() {
   const [paid, setPaid] = useState(false);
   const [done, setDone] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const t = setInterval(tick, 60000);
+    document.addEventListener("visibilitychange", tick);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", tick); };
+  }, []);
 
   const setQ = (id, q) => setCart(c => ({ ...c, [id]: q }));
   const items = LINES.filter(l => cart[l.id] > 0).map(l => ({ ...l, q: cart[l.id], amt: l.q250 && cart[l.id] === 0.25 ? l.q250 : Math.round(l.price * cart[l.id]) }));
   const total = items.reduce((s, i) => s + i.amt, 0);
-  const sunStr = nextSunday().toLocaleDateString("ta-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const isSunday = new Date().getDay() === 0;
+  const sunStr = nextSunday(now).toLocaleDateString("ta-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const up = k => e => setF({ ...f, [k]: e.target.value });
 
   const validate = () => {
@@ -125,7 +141,7 @@ export default function App() {
         <div className="banner">
           <div className="bk">📅 திங்கள் முதல் சனி வரை முன்பதிவு</div>
           <div className="bk">🛵 ஞாயிறு காலை 9.30 – 11.15 டெலிவரி</div>
-          <div className="when">{isSunday ? "அடுத்த ஞாயிறுக்கு முன்பதிவு செய்யவும்: " : "உங்கள் ஆர்டர் டெலிவரி தேதி: "}<b>{sunStr}</b></div>
+          <div className="when">அடுத்த டெலிவரி தேதி: <b>{sunStr}</b></div>
           <div className="cta">
             <a className="btn" href={`tel:+91${PHONE}`}>📞 அழைக்க {PHONE_SHOW}</a>
             <a className="btn wa" href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer">💬 வாட்ஸ்அப்</a>
@@ -223,7 +239,12 @@ export default function App() {
             ) : (
               <>
                 <div className="amt"><small>செலுத்த வேண்டிய தொகை</small>₹{total}</div>
-                <p style={{ margin: "12px 0 4px" }}>ஆர்டர் செய்யும் முன், <b>₹{total}</b> தொகையை <b>ஜிபே / போன்பே</b> மூலம் கீழ்க்கண்ட எண்ணுக்கு செலுத்தவும்:</p>
+                <p style={{ margin: "12px 0 4px" }}>ஆர்டர் செய்யும் முன், <b>₹{total}</b> தொகையை <span className="app"><b>ஜிபே</b><GPayIcon /></span> / <span className="app"><b>போன்பே</b><PhonePeIcon /></span> மூலம் செலுத்தவும். க்யூஆர் கோடை ஸ்கேன் செய்யவும் அல்லது கீழ்க்கண்ட எண்ணுக்கு அனுப்பவும்:</p>
+                <div className="qrbox">
+                  <img className="qr" src={qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
+                  <small>இந்த க்யூஆர் கோடை ஜிபே, போன்பே இரண்டிலும் ஸ்கேன் செய்யலாம்.</small>
+                  <a className="btn ghost sm" href={qrImg} download="kayal-fresh-meat-qr.png">⬇ க்யூஆர் படத்தை சேமிக்க</a>
+                </div>
                 <div className="pay">
                   <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
                   <div><span>மொபைல்</span><b>{PAYEE.mobile}</b> <button className="btn ghost sm" onClick={() => copy(PAYEE.mobile)}>{copied ? "நகலெடுக்கப்பட்டது" : "நகலெடு"}</button></div>
