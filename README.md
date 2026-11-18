@@ -26,7 +26,7 @@ WhatsApp caches previews, so a link shared earlier may keep the old preview for 
 
 ## Automatic order capture (no customer action)
 WhatsApp cannot be sent automatically from a web page, so each order is also saved silently the moment the customer
-taps "அடுத்து: ஆர்டரை அனுப்ப". Setup (free):
+taps "அடுத்து: பணம் செலுத்த" (status: பணம் நிலுவை, then updated to பணம் செலுத்தப்பட்டது with the 10-digit paying mobile number). Setup (free):
 1. Create a Google Sheet > Extensions > Apps Script, paste `order-capture/google-apps-script.gs`.
 2. Deploy > New deployment > Web app (Execute as: Me, Access: Anyone) and copy the URL.
 3. Put the URL in `.env` as `VITE_ORDER_ENDPOINT=...`, then rebuild.
