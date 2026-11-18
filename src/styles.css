@@ -132,6 +132,8 @@ summary{cursor:pointer;font-weight:700;color:var(--red);padding:6px 0}
 .appicon{width:22px;height:22px;border-radius:50%;vertical-align:middle;display:inline-block}
 .qrbox{display:flex;flex-direction:column;align-items:center;gap:8px;background:#fff;border:2px solid var(--yellow);border-radius:16px;padding:12px;margin:10px 0}
 .qr{width:100%;max-width:260px;height:auto;border-radius:12px;display:block}
+.qrapps{display:flex;gap:18px;justify-content:center;align-items:center}
+.qrapps .appicon{width:30px;height:30px}
 .qrbox small{text-align:center;color:var(--mute);font-size:.8rem}
 .panel .chk{display:flex;align-items:center;gap:14px;padding:14px;cursor:pointer;font-size:1rem}
 .panel .chk input{width:30px;height:30px;min-width:30px;padding:0;margin:0;accent-color:var(--green2);cursor:pointer}

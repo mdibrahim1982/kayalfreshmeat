@@ -287,15 +287,15 @@ export default function App() {
               <>
                 <div className="amt"><small>செலுத்த வேண்டிய தொகை · ஆர்டர் #{orderId}</small>₹{total}</div>
                 <div className="qrbox">
+                  <div className="qrapps"><span className="app"><GPayIcon /><b>ஜிபே</b></span><span className="app"><PhonePeIcon /><b>போன்பே</b></span></div>
                   <img className="qr" src={qrUrl || qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
-                  <small>இந்த க்யூஆர் கோடை ஸ்கேன் செய்தால் ₹{total} தொகை தானாக வரும். ஜிபே, போன்பே இரண்டிலும் ஸ்கேன் செய்யலாம்.</small>
                   <a className="btn ghost sm" href={qrUrl || qrImg} download="kayal-fresh-meat-qr.png">⬇ க்யூஆர் படத்தை சேமிக்க</a>
                 </div>
                 <div className="pay">
                   <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
                   <div><span>மொபைல்</span><b>{PAYEE.mobile}</b> <button className="btn ghost sm" onClick={() => copy(PAYEE.mobile)}>{copied ? "நகலெடுக்கப்பட்டது" : "நகலெடு"}</button></div>
                 </div>
-                <div className="disc">⚠️ பணம் செலுத்திய பின் <b>இந்தப் பக்கத்திற்கு திரும்பி வந்து</b>, கீழே பணம் செலுத்த பயன்படுத்திய 10 இலக்க மொபைல் எண்ணை உள்ளிட்டு ஆர்டரை வாட்ஸ்அப்பில் அனுப்பவும். பணம் செலுத்தும் வரை ஆர்டரை அனுப்ப முடியாது. நீங்கள் உள்ளிடும் எண், பணம் செலுத்திய ஜிபே / போன்பே எண்ணாக இருக்க வேண்டும்; அதை வைத்தே உங்கள் பணம் சரிபார்க்கப்படும்.</div>
+                <div className="disc">⚠️ கீழே பணம் செலுத்த பயன்படுத்திய 10 இலக்க மொபைல் எண்ணை உள்ளிட்டு ஆர்டரை வாட்ஸ்அப்பில் அனுப்பவும். பணம் செலுத்தும் வரை ஆர்டரை அனுப்ப முடியாது. நீங்கள் உள்ளிடும் எண், பணம் செலுத்திய ஜிபே / போன்பே எண்ணாக இருக்க வேண்டும்; அதை வைத்தே உங்கள் பணம் சரிபார்க்கப்படும்.</div>
                 <label>பணம் செலுத்திய மொபைல் எண் (ஜிபே / போன்பே) – 10 இலக்கம் *</label>
                 <input value={payMobile} onChange={e => setPayMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" maxLength={10} placeholder="எ.கா. 9876543210" />
                 <small className="hint">பணம் செலுத்த நீங்கள் பயன்படுத்திய ஜிபே / போன்பே மொபைல் எண்ணை உள்ளிடவும்.</small>
