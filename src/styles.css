@@ -140,3 +140,17 @@ summary{cursor:pointer;font-weight:700;color:var(--red);padding:6px 0}
 .herowrap{padding-top:8px;padding-bottom:0}
 .hero{width:100%;max-width:none;min-width:0;border-radius:16px;-webkit-mask-image:none;mask-image:none;box-shadow:0 4px 14px rgba(0,0,0,.12)}
 .herowrap + .wrap .banner{margin-top:12px}
+
+/* polished banner: soft sky-and-greenery backdrop, logo centered */
+.herobox{position:relative;height:clamp(150px,26vw,208px);border-radius:16px;overflow:hidden;display:flex;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.12);
+background:
+radial-gradient(circle at 5% 30%,rgba(104,170,52,.55) 0 8%,transparent 24%),
+radial-gradient(circle at 15% 85%,rgba(255,236,120,.5) 0 6%,transparent 20%),
+radial-gradient(circle at 3% 75%,rgba(70,140,60,.4) 0 7%,transparent 22%),
+radial-gradient(circle at 95% 28%,rgba(140,198,70,.55) 0 8%,transparent 24%),
+radial-gradient(circle at 85% 82%,rgba(255,236,120,.5) 0 6%,transparent 20%),
+radial-gradient(circle at 97% 72%,rgba(70,140,60,.4) 0 7%,transparent 22%),
+linear-gradient(180deg,#bee2f6 0%,#e4f3d6 60%,#c8e496 100%)}
+.herobox img{height:100%;width:auto;max-width:100%;object-fit:contain;display:block;
+-webkit-mask-image:linear-gradient(90deg,transparent,#000 16%,#000 84%,transparent),linear-gradient(180deg,#000 86%,transparent);-webkit-mask-composite:source-in;
+mask-image:linear-gradient(90deg,transparent,#000 16%,#000 84%,transparent),linear-gradient(180deg,#000 86%,transparent);mask-composite:intersect}

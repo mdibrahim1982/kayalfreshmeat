@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Art from "./Art.jsx";
-import bannerImg from "./assets/banner-wide.png";
+import bannerImg from "./assets/banner.png";
 import footerImg from "./assets/footer.png";
 import qrImg from "./assets/gpay-qr.png";
 import gpayIcon from "./assets/gpay-icon.png";
@@ -137,7 +137,7 @@ export default function App() {
 
   return (
     <>
-      <div className="wrap herowrap"><img className="hero" src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div>
+      <div className="wrap herowrap"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
       <div className="wrap">
         <div className="banner">
           <div className="bk">📅 திங்கள் முதல் சனி வரை முன்பதிவு</div>
