@@ -163,3 +163,6 @@ mask-image:linear-gradient(90deg,transparent,#000 16%,#000 84%,transparent),line
 .banner .cta .btn{flex:1;padding:8px 10px;font-size:.85rem}
 h2{margin:14px 0 8px}
 .steps i{width:60px}
+
+.hint{display:block;color:var(--mute);font-size:.8rem;margin-top:4px}
+.steps i{width:80px}
