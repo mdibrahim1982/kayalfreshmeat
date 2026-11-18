@@ -1,2 +1,5 @@
 # Put your live website address here (no trailing slash). Needed for the WhatsApp link preview.
-VITE_SITE_URL=https://mdibrahim1982.github.io/kayalfreshmeat
+VITE_SITE_URL=https://YOUR-WEBSITE-ADDRESS
+
+# Optional: Google Apps Script web-app URL that saves each order automatically (see README)
+VITE_ORDER_ENDPOINT=
