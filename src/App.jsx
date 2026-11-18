@@ -9,6 +9,8 @@ import gpayIcon from "./assets/gpay-icon.png";
 const photos = import.meta.glob("./assets/products/*.{jpg,jpeg,png,webp}", { eager: true, import: "default" });
 const photoFor = id => Object.entries(photos).find(([p]) => p.split("/").pop().split(".")[0] === id)?.[1];
 
+// Optional: Google Apps Script URL that silently saves every order (see README)
+const ORDER_ENDPOINT = import.meta.env.VITE_ORDER_ENDPOINT;
 const PHONE = "7601915355", WA = "917601915355";
 const PHONE_SHOW = "7601 915355";
 const PAYEE = { name: "FATHIMA FARZANA S.J", mobile: "9444492854" };
@@ -70,6 +72,7 @@ export default function App() {
   const [sheet, setSheet] = useState(false);
   const [step, setStep] = useState(1);
   const [paid, setPaid] = useState(false);
+  const [orderId, setOrderId] = useState("");
   const [done, setDone] = useState(false);
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(new Date());
@@ -96,11 +99,27 @@ export default function App() {
     setErrs(e);
     return !Object.keys(e).length;
   };
-  const open = () => { setStep(1); setPaid(false); setSheet(true); };
-  const next = () => { if (validate()) setStep(2); };
+  const open = () => { setStep(1); setPaid(false); setOrderId(String(Date.now()).slice(-6)); setSheet(true); };
+
+  // Silently saves the order the moment the customer moves on (no customer action needed)
+  const postOrder = () => {
+    if (!ORDER_ENDPOINT) return;
+    try {
+      fetch(ORDER_ENDPOINT, {
+        method: "POST", mode: "no-cors", keepalive: true, headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          orderId, time: new Date().toISOString(), delivery: sunStr, name: f.name, mobile: f.mobile, alt: f.alt,
+          address: f.address, area: f.area, landmark: f.landmark, notes: f.notes, total,
+          items: items.map(i => `${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`).join("\n"),
+        }),
+      });
+    } catch (e) { /* ignore */ }
+  };
+  const next = () => { if (validate()) { postOrder(); setStep(2); } };
 
   const msg = () => [
     `*புதிய முன்பதிவு – ${SHOP}*`,
+    `ஆர்டர் எண்: #${orderId}`,
     `டெலிவரி: ${sunStr} (காலை 9.30 – 11.15)`, "",
     "*பொருட்கள்*",
     ...items.map(i => `• ${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`),
@@ -112,11 +131,18 @@ export default function App() {
     `அடையாளம்: ${f.landmark}`,
     `பகுதி: ${f.area}`,
     f.notes ? `குறிப்பு: ${f.notes}` : false, "",
-    `பணம் செலுத்தப்பட்டது (ஜிபே / போன்பே) – ${PAYEE.name} (${PAYEE.mobile}). பணம் செலுத்திய ஸ்கிரீன்ஷாட்டை அனுப்புகிறேன்.`
+    `பணம்: ஜிபே / போன்பே மூலம் ₹${total} செலுத்துகிறேன். பணம் செலுத்தியதும் ஸ்கிரீன்ஷாட் அனுப்புகிறேன்.`
   ].filter(x => x !== false).join("\n");
 
-  const send = () => {
+  // Step 2: opens WhatsApp with the full order already typed in (customer only taps Send)
+  const sendOrder = () => {
     window.open(`https://wa.me/${WA}?text=${encodeURIComponent(msg())}`, "_blank");
+    setStep(3);
+  };
+  // Step 3: after paying, opens WhatsApp for the payment screenshot
+  const sendPaid = () => {
+    const t = `*பணம் செலுத்தப்பட்டது* ✅\nஆர்டர் எண்: #${orderId}\nபெயர்: ${f.name}\nமொபைல்: ${f.mobile}\nதொகை: ₹${total}\n(ஸ்கிரீன்ஷாட் இணைக்கப்பட்டுள்ளது)`;
+    window.open(`https://wa.me/${WA}?text=${encodeURIComponent(t)}`, "_blank");
     setSheet(false); setDone(true); window.scrollTo({ top: 0 });
   };
   const copy = t => { try { navigator.clipboard.writeText(t); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
@@ -140,11 +166,10 @@ export default function App() {
       <div className="wrap herowrap"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
       <div className="wrap">
         <div className="banner">
-          <div className="bk">📅 திங்கள் முதல் சனி வரை முன்பதிவு</div>
-          <div className="bk">🛵 ஞாயிறு காலை 9.30 – 11.15 டெலிவரி</div>
+          <div className="bk">📅 திங்கள் முதல் சனி வரை முன்பதிவு · 🛵 ஞாயிறு காலை 9.30 – 11.15 டெலிவரி</div>
           <div className="when">அடுத்த டெலிவரி தேதி: <b>{sunStr}</b></div>
           <div className="cta">
-            <a className="btn" href={`tel:+91${PHONE}`}>📞 அழைக்க {PHONE_SHOW}</a>
+            <a className="btn" href={`tel:+91${PHONE}`}>📞 {PHONE_SHOW}</a>
             <a className="btn wa" href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer">💬 வாட்ஸ்அப்</a>
           </div>
         </div>
@@ -185,7 +210,7 @@ export default function App() {
         <div className="contact">
           <b>தொடர்புக்கு</b><br />
           {SHOP}<br />
-          சிவன்கோவில் தெரு (ஆரியூசியா பள்ளி சமீபம்),<br />காயல்பட்டினம்.<br />
+          சிவன்கோவில் தெரு (அரூஸிய்யா பள்ளி சமீபம்),<br />காயல்பட்டினம்.<br />
           📞 <a href={`tel:+91${PHONE}`}>{PHONE_SHOW}</a> · <a href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer">வாட்ஸ்அப்</a>
         </div>
       </footer>
@@ -201,10 +226,10 @@ export default function App() {
         <div className="modal" onClick={() => setSheet(false)}>
           <div className="panel" onClick={e => e.stopPropagation()}>
             <div className="phead">
-              <div><small>{SHOP}</small><b>{step === 1 ? "🛵 டெலிவரி விவரங்கள்" : "💳 பணம் செலுத்த"}</b></div>
+              <div><small>{SHOP}</small><b>{step === 1 ? "🛵 டெலிவரி விவரங்கள்" : step === 2 ? "📲 ஆர்டரை அனுப்ப" : "💳 பணம் செலுத்த"}</b></div>
               <button className="x" aria-label="மூடு" onClick={() => setSheet(false)}>✕</button>
             </div>
-            <div className="steps"><span className="dot on">1</span><i className={step === 2 ? "on" : ""} /><span className={"dot" + (step === 2 ? " on" : "")}>2</span></div>
+            <div className="steps"><span className="dot on">1</span><i className={step >= 2 ? "on" : ""} /><span className={"dot" + (step >= 2 ? " on" : "")}>2</span><i className={step >= 3 ? "on" : ""} /><span className={"dot" + (step >= 3 ? " on" : "")}>3</span></div>
 
             {step === 1 ? (
               <>
@@ -237,12 +262,24 @@ export default function App() {
                   <input value={f.notes} onChange={up("notes")} placeholder="பீஸ் அளவு, சுத்தம் போன்றவை" />
                 </details>
                 <div className="disc">⚠️ வாடிக்கையாளரின் இடம் மற்றும் தூரத்தைப் பொறுத்து டெலிவரி நேரம் மாறுபடலாம்.</div>
-                <button className="btn big" onClick={next}>அடுத்து: பணம் செலுத்த →</button>
+                <button className="btn big" onClick={next}>அடுத்து: ஆர்டரை அனுப்ப →</button>
+              </>
+            ) : step === 2 ? (
+              <>
+                <div className="amt"><small>ஆர்டர் எண் #{orderId} · மொத்தம்</small>₹{total}</div>
+                <div className="sum" style={{ marginTop: 12 }}>
+                  {items.map(i => (
+                    <div className="l" key={i.id}><span>{i.name} × {fmtQty(i, i.q)}</span><span>₹{i.amt}</span></div>
+                  ))}
+                </div>
+                <div className="disc">📲 முதலில் உங்கள் ஆர்டர் விவரத்தை வாட்ஸ்அப்பில் அனுப்பவும். வாட்ஸ்அப் திறந்ததும் <b>அனுப்பு (➤)</b> பொத்தானை அழுத்தவும். அதன் பிறகு பணம் செலுத்தும் பக்கம் வரும்.</div>
+                <button className="btn wa big" onClick={sendOrder}>📲 வாட்ஸ்அப்பில் ஆர்டரை அனுப்ப</button>
+                <button className="btn ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setStep(1)}>← பின்செல்</button>
               </>
             ) : (
               <>
-                <div className="amt"><small>செலுத்த வேண்டிய தொகை</small>₹{total}</div>
-                <p style={{ margin: "12px 0 4px" }}>ஆர்டர் செய்யும் முன், <b>₹{total}</b> தொகையை <span className="app"><b>ஜிபே</b><GPayIcon /></span> / <span className="app"><b>போன்பே</b><PhonePeIcon /></span> மூலம் செலுத்தவும். க்யூஆர் கோடை ஸ்கேன் செய்யவும் அல்லது கீழ்க்கண்ட எண்ணுக்கு அனுப்பவும்:</p>
+                <div className="amt"><small>செலுத்த வேண்டிய தொகை · ஆர்டர் #{orderId}</small>₹{total}</div>
+                <p style={{ margin: "12px 0 4px" }}><b>₹{total}</b> தொகையை <span className="app"><b>ஜிபே</b><GPayIcon /></span> / <span className="app"><b>போன்பே</b><PhonePeIcon /></span> மூலம் செலுத்தவும். க்யூஆர் கோடை ஸ்கேன் செய்யவும் அல்லது கீழ்க்கண்ட எண்ணுக்கு அனுப்பவும்:</p>
                 <div className="qrbox">
                   <img className="qr" src={qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
                   <small>இந்த க்யூஆர் கோடை ஜிபே, போன்பே இரண்டிலும் ஸ்கேன் செய்யலாம்.</small>
@@ -252,11 +289,11 @@ export default function App() {
                   <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
                   <div><span>மொபைல்</span><b>{PAYEE.mobile}</b> <button className="btn ghost sm" onClick={() => copy(PAYEE.mobile)}>{copied ? "நகலெடுக்கப்பட்டது" : "நகலெடு"}</button></div>
                 </div>
-                <div className="disc">பணம் செலுத்திய பின், வாட்ஸ்அப்பில் பகிர ஸ்கிரீன்ஷாட்டை தயாராக வைத்திருக்கவும்.</div>
+                <div className="disc">பணம் செலுத்திய பின், ஸ்கிரீன்ஷாட்டை எடுத்து கீழே உள்ள பொத்தான் மூலம் வாட்ஸ்அப்பில் அனுப்பவும்.</div>
                 <label className="chk"><input type="checkbox" checked={paid} onChange={e => setPaid(e.target.checked)} /><span>₹{total} பணம் செலுத்திவிட்டேன்.</span></label>
                 <div className="cta">
-                  <button className="btn wa" disabled={!paid} onClick={send}>வாட்ஸ்அப்பில் ஆர்டர் செய்ய</button>
-                  <button className="btn ghost" onClick={() => setStep(1)}>← பின்செல்</button>
+                  <button className="btn wa" disabled={!paid} onClick={sendPaid}>வாட்ஸ்அப்பில் பணம் செலுத்தியதை அனுப்ப</button>
+                  <button className="btn ghost" onClick={() => setStep(2)}>ஆர்டரை மீண்டும் அனுப்ப</button>
                 </div>
               </>
             )}
