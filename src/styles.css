@@ -135,3 +135,8 @@ summary{cursor:pointer;font-weight:700;color:var(--red);padding:6px 0}
 .qrbox small{text-align:center;color:var(--mute);font-size:.8rem}
 .panel .chk{display:flex;align-items:center;gap:14px;padding:14px;cursor:pointer;font-size:1rem}
 .panel .chk input{width:30px;height:30px;min-width:30px;padding:0;margin:0;accent-color:var(--green2);cursor:pointer}
+
+/* banner same width as the notice below */
+.herowrap{padding-top:8px;padding-bottom:0}
+.hero{width:100%;max-width:none;min-width:0;border-radius:16px;-webkit-mask-image:none;mask-image:none;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.herowrap + .wrap .banner{margin-top:12px}

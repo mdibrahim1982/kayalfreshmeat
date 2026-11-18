@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Art from "./Art.jsx";
-import bannerImg from "./assets/banner.png";
+import bannerImg from "./assets/banner-wide.png";
 import footerImg from "./assets/footer.png";
 import qrImg from "./assets/gpay-qr.png";
 import gpayIcon from "./assets/gpay-icon.png";
@@ -92,6 +92,7 @@ export default function App() {
     if (!/^[6-9]\d{9}$/.test(f.mobile.replace(/\s/g, ""))) e.mobile = "சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.";
     if (!f.address.trim()) e.address = "டெலிவரி முகவரி அவசியம்.";
     if (!f.area.trim()) e.area = "பகுதி / இடம் அவசியம்.";
+    if (!f.landmark.trim()) e.landmark = "அடையாளம் அல்லது கூகுள் மேப் இணைப்பு அவசியம்.";
     setErrs(e);
     return !Object.keys(e).length;
   };
@@ -108,7 +109,7 @@ export default function App() {
     `பெயர்: ${f.name}`, `மொபைல்: ${f.mobile}`,
     f.alt ? `மாற்று மொபைல்: ${f.alt}` : false,
     `முகவரி: ${f.address}`,
-    f.landmark ? `அடையாளம்: ${f.landmark}` : false,
+    `அடையாளம்: ${f.landmark}`,
     `பகுதி: ${f.area}`,
     f.notes ? `குறிப்பு: ${f.notes}` : false, "",
     `பணம் செலுத்தப்பட்டது (ஜிபே / போன்பே) – ${PAYEE.name} (${PAYEE.mobile}). பணம் செலுத்திய ஸ்கிரீன்ஷாட்டை அனுப்புகிறேன்.`
@@ -136,7 +137,7 @@ export default function App() {
 
   return (
     <>
-      <img className="hero" src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" />
+      <div className="wrap herowrap"><img className="hero" src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div>
       <div className="wrap">
         <div className="banner">
           <div className="bk">📅 திங்கள் முதல் சனி வரை முன்பதிவு</div>
@@ -224,12 +225,13 @@ export default function App() {
                 <label>பகுதி / இடம் *</label>
                 <input value={f.area} onChange={up("area")} placeholder="பகுதி / இடம்" />
                 {errs.area && <div className="err">{errs.area}</div>}
+                <label>அடையாளம் / கூகுள் மேப் இணைப்பு *</label>
+                <input value={f.landmark} onChange={up("landmark")} placeholder="பள்ளிவாசல், கடை அருகில் அல்லது கூகுள் மேப் இணைப்பு" />
+                {errs.landmark && <div className="err">{errs.landmark}</div>}
                 <details>
                   <summary>+ கூடுதல் விவரங்கள் (விருப்பம்)</summary>
                   <label>மாற்று மொபைல் எண்</label>
                   <input value={f.alt} onChange={up("alt")} inputMode="numeric" maxLength={10} />
-                  <label>அடையாளம் / கூகுள் மேப் இணைப்பு</label>
-                  <input value={f.landmark} onChange={up("landmark")} placeholder="பள்ளிவாசல், கடை அருகில்" />
                   <label>சிறப்பு குறிப்புகள்</label>
                   <input value={f.notes} onChange={up("notes")} placeholder="பீஸ் அளவு, சுத்தம் போன்றவை" />
                 </details>
