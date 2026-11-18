@@ -23,3 +23,11 @@ Illustrations are shown by default. To use real photos, add files named after th
 2. Edit `.env` and set `VITE_SITE_URL` to the real address, e.g. `https://kayalfreshmeat.netlify.app`, then build again.
 3. The preview image is `public/og-image.png`; the browser icon is `public/favicon.png`.
 WhatsApp caches previews, so a link shared earlier may keep the old preview for a while.
+
+## Automatic order capture (no customer action)
+WhatsApp cannot be sent automatically from a web page, so each order is also saved silently the moment the customer
+taps "அடுத்து: ஆர்டரை அனுப்ப". Setup (free):
+1. Create a Google Sheet > Extensions > Apps Script, paste `order-capture/google-apps-script.gs`.
+2. Deploy > New deployment > Web app (Execute as: Me, Access: Anyone) and copy the URL.
+3. Put the URL in `.env` as `VITE_ORDER_ENDPOINT=...`, then rebuild.
+Every order then appears as a new row in the sheet (and can email you if you enable the MailApp line).
