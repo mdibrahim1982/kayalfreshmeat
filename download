@@ -1,0 +1,2 @@
+# Put your live website address here (no trailing slash). Needed for the WhatsApp link preview.
+VITE_SITE_URL=https://YOUR-WEBSITE-ADDRESS
