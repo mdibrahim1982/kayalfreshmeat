@@ -555,7 +555,7 @@ const sendOrder = async () => {
                 {orderError && <div className="err">{orderError}</div>}
                 <label className="chk"><input type="checkbox" checked={paid} onChange={e => setPaid(e.target.checked)} /><span>₹{total} பணம் செலுத்திவிட்டேன்.</span></label>
                 <div className="cta">
-                  <button className="btn wa" disabled={!paid || !payOk} onClick={sendOrder}>📲 வாட்ஸ்அப்பில் ஆர்டரை அனுப்ப</button>
+                  <button className="btn wa" disabled={!paid || !payOk} onClick={sendOrder}>📲 ஆர்டர் செய்யவும்</button>
                   <button className="btn ghost" onClick={() => setStep(1)}>← பின்செல்</button>
                 </div>
               </>
