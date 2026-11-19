@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Art from "./Art.jsx";
 import bannerImg from "./assets/banner.png";
 import footerImg from "./assets/footer.png";
@@ -103,6 +103,15 @@ export default function App() {
   const total = items.reduce((s, i) => s + i.amt, 0);
   const [qrUrl, setQrUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  // Always show the popup from the top when it opens or the step changes
+  const panelRef = useRef(null);
+  useEffect(() => {
+    if (!sheet) return;
+    const top = () => { if (panelRef.current) panelRef.current.scrollTop = 0; };
+    top();
+    const t = setTimeout(top, 60);
+    return () => clearTimeout(t);
+  }, [sheet, step, loading]);
   useEffect(() => {
     if (!sheet || step !== 2 || !total) return;
     let live = true;
@@ -259,7 +268,7 @@ export default function App() {
 
       {sheet && (
         <div className="modal" onClick={() => setSheet(false)}>
-          <div className="panel" onClick={e => e.stopPropagation()}>
+          <div className="panel" ref={panelRef} onClick={e => e.stopPropagation()}>
             {loading && (
               <div className="loadov" role="status" aria-live="polite">
                 <div className="loadcard"><span className="spin lg" /><p>பணம் செலுத்தும் பக்கம் தயாராகிறது…<br />சற்று காத்திருக்கவும்</p></div>
