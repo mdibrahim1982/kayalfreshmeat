@@ -35,8 +35,8 @@ const PRODUCTS = [
   { id: "kudal", name: "குடல்", kind: "kg", price: 200, min: 1, step: 1 },
   { id: "kidney", name: "கிட்னி", kind: "kg", price: 480, showPrice: 120, per: "250 கிராம்" },
   { id: "tail", name: "வால்", kind: "unit", variants: [
-    { id: "tail-s", label: "சிறியது", price: 180 },
-    { id: "tail-l", label: "பெரியது", price: 350 } ] },
+    { id: "tail-s", label: "சிறியது", price: 200 },
+    { id: "tail-l", label: "பெரியது", price: 300 } ] },
 ];
 
 const LINES = PRODUCTS.flatMap(p => p.variants
@@ -97,6 +97,7 @@ export default function App() {
   const [sheet, setSheet] = useState(!!saved.sheet);
   const [step, setStep] = useState(saved.step || 1);
   const [paid, setPaid] = useState(false);
+  const [method, setMethod] = useState("qr"); // "qr" = pay by QR code, "cod" = cash on delivery
   const [orderId, setOrderId] = useState(saved.orderId || "");
   const [payMobile, setPayMobile] = useState(saved.payMobile || "");
   const [done, setDone] = useState(false);
@@ -239,6 +240,7 @@ const open = () => {
 
   setStep(1);
   setPaid(false);
+  setMethod("qr");
   setPayMobile("");
   setOrderId(String(Date.now()).slice(-6));
   setSheet(true);
@@ -262,7 +264,7 @@ const postOrder = async (status) => {
     body: JSON.stringify({
       orderId,
       status,
-      payMobile,
+      payMobile: method === "cod" ? "" : payMobile,
       time: new Date().toISOString(),
       delivery: sunStr,
       name: f.name,
@@ -347,22 +349,22 @@ const next = async () => {
     `அடையாளம்: ${f.landmark}`,
     `பகுதி: ${f.area}`,
     f.notes ? `குறிப்பு: ${f.notes}` : false, "",
-    `*பணம் செலுத்தப்பட்டது* ✅ (ஜிபே / போன்பே)`,
-    `தொகை: ₹${total}`,
-    `பணம் செலுத்திய மொபைல் எண்: ${payMobile}`
+    ...(method === "cod"
+      ? [`*கேஷ் ஆன் டெலிவரி* 💵`, `டெலிவரியின் போது செலுத்த வேண்டிய தொகை: ₹${total}`]
+      : [`*பணம் செலுத்தப்பட்டது* ✅ (ஜிபே / போன்பே)`, `தொகை: ₹${total}`, `பணம் செலுத்திய மொபைல் எண்: ${payMobile}`])
   ].filter(x => x !== false).join("\n");
 
   const payOk = /^[6-9]\d{9}$/.test(payMobile.trim());
   // Only possible after the payment is marked done AND a valid 10-digit paying mobile number is entered
  
 const sendOrder = async () => {
-  if (!paid || !payOk || loading) return;
+  if (loading || (method !== "cod" && (!paid || !payOk))) return;
 
   setLoading(true);
   setOrderError("");
 
   try {
-    await postOrder("பணம் செலுத்தப்பட்டது");
+    await postOrder(method === "cod" ? "கேஷ் ஆன் டெலிவரி" : "பணம் செலுத்தப்பட்டது");
 
     window.open(
       `https://wa.me/${WA}?text=${encodeURIComponent(msg())}`,
@@ -386,7 +388,7 @@ const sendOrder = async () => {
     <div className="wrap" style={{ textAlign: "center", paddingTop: 60 }}>
       <div style={{ fontSize: 56 }}>✅</div>
       <h2>நன்றி, {f.name}!</h2>
-      <p>உங்கள் முன்பதிவு வாட்ஸ்அப்பில் தயாராக உள்ளது. செய்தியை அனுப்பி, பணம் செலுத்திய ஸ்கிரீன்ஷாட்டையும் பகிர்ந்து உறுதிசெய்யவும்.</p>
+      <p>உங்கள் முன்பதிவு வாட்ஸ்அப்பில் தயாராக உள்ளது. {method === "cod" ? "செய்தியை அனுப்பி உறுதிசெய்யவும். பணத்தை டெலிவரியின் போது செலுத்தலாம்." : "செய்தியை அனுப்பி, பணம் செலுத்திய ஸ்கிரீன்ஷாட்டையும் பகிர்ந்து உறுதிசெய்யவும்."}</p>
       <p><b>டெலிவரி:</b> {sunStr}, காலை 9.30 – 11.30</p>
       <div className="cta" style={{ justifyContent: "center" }}>
         <button className="btn" onClick={() => { setDone(false); setCart({}); }}>புதிய ஆர்டர்</button>
@@ -499,7 +501,7 @@ const sendOrder = async () => {
               </div>
             )}
             <div className="phead">
-              <div><small>{SHOP}</small><b>{step === 1 ? "🛵 டெலிவரி விவரங்கள்" : "💳 பணம் செலுத்தி ஆர்டர் செய்ய"}</b></div>
+              <div><small>{SHOP}</small><b>{step === 1 ? "🛵 டெலிவரி விவரங்கள்" : "💳 பணம் செலுத்தும் முறை"}</b></div>
               <button className="x" aria-label="மூடு" onClick={() => setSheet(false)}>✕</button>
             </div>
             <div className="steps"><span className="dot on">1</span><i className={step === 2 ? "on" : ""} /><span className={"dot" + (step === 2 ? " on" : "")}>2</span></div>
@@ -540,22 +542,32 @@ const sendOrder = async () => {
             ) : (
               <>
                 <div className="amt"><small>செலுத்த வேண்டிய தொகை</small><span>₹{total}</span></div>
-                <div className="qrbox">
-                  <div className="qrapps"><span className="app"><GPayIcon /><b>ஜிபே</b></span><span className="app"><PhonePeIcon /><b>போன்பே</b></span></div>
-                  <img className="qr" src={qrUrl || qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
-                  <a className="btn ghost sm" href={qrUrl || qrImg} download="kayal-fresh-meat-qr.png">⬇ க்யூஆர் படத்தை சேமிக்க</a>
+                <div className="pmeth">
+                  <button type="button" className={method === "qr" ? "on" : ""} onClick={() => setMethod("qr")}>📱 க்யூஆர் கோடு மூலம் செலுத்த</button>
+                  <button type="button" className={method === "cod" ? "on" : ""} onClick={() => setMethod("cod")}>💵 கேஷ் ஆன் டெலிவரி</button>
                 </div>
-                <div className="pay">
-                  <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
-                  <div><span>மொபைல்</span><b>{PAYEE.mobile}</b> <button className="btn ghost sm" onClick={() => copy(PAYEE.mobile)}>{copied ? "✓ நகலெடுத்தது" : "நகலெடு"}</button></div>
-                </div>
-                <label>பணம் செலுத்திய மொபைல் எண் (ஜிபே / போன்பே) – 10 இலக்கம் *</label>
-                <input value={payMobile} onChange={e => setPayMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" maxLength={10} placeholder="எ.கா. 9876543210" />
-                {payMobile && !payOk && <div className="err">சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.</div>}
+                {method === "qr" ? (
+                  <>
+                    <div className="qrbox">
+                      <div className="qrapps"><span className="app"><GPayIcon /><b>ஜிபே</b></span><span className="app"><PhonePeIcon /><b>போன்பே</b></span></div>
+                      <img className="qr" src={qrUrl || qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
+                      <a className="btn ghost sm" href={qrUrl || qrImg} download="kayal-fresh-meat-qr.png">⬇ க்யூஆர் படத்தை சேமிக்க</a>
+                    </div>
+                    <div className="pay">
+                      <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
+                      <div><span>மொபைல்</span><b>{PAYEE.mobile}</b> <button className="btn ghost sm" onClick={() => copy(PAYEE.mobile)}>{copied ? "✓ நகலெடுத்தது" : "நகலெடு"}</button></div>
+                    </div>
+                    <label>பணம் செலுத்திய மொபைல் எண் (ஜிபே / போன்பே) – 10 இலக்கம் *</label>
+                    <input value={payMobile} onChange={e => setPayMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" maxLength={10} placeholder="எ.கா. 9876543210" />
+                    {payMobile && !payOk && <div className="err">சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.</div>}
+                    <label className="chk"><input type="checkbox" checked={paid} onChange={e => setPaid(e.target.checked)} /><span>₹{total} பணம் செலுத்திவிட்டேன்.</span></label>
+                  </>
+                ) : (
+                  <div className="codnote">💵 டெலிவரியின் போது ₹{total} பணமாக செலுத்தவும்.</div>
+                )}
                 {orderError && <div className="err">{orderError}</div>}
-                <label className="chk"><input type="checkbox" checked={paid} onChange={e => setPaid(e.target.checked)} /><span>₹{total} பணம் செலுத்திவிட்டேன்.</span></label>
                 <div className="cta">
-                  <button className="btn wa" disabled={!paid || !payOk} onClick={sendOrder}>📲 ஆர்டர் செய்யவும்</button>
+                  <button className="btn wa" disabled={loading || (method !== "cod" && (!paid || !payOk))} onClick={sendOrder}>{loading ? <><span className="spin" /> ஏற்றுகிறது…</> : "📲 ஆர்டர் செய்யவும்"}</button>
                   <button className="btn ghost" onClick={() => setStep(1)}>← பின்செல்</button>
                 </div>
               </>
