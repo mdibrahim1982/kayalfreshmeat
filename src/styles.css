@@ -193,3 +193,36 @@ h2{margin:14px 0 8px}
 /* compact amount box on the payment step */
 .panel .amt{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;font-size:1.5rem;padding:8px 14px;margin-top:8px;border-radius:12px}
 .panel .amt small{display:inline;font-size:.9rem;font-weight:700}
+
+/* Weekly sold-out appearance */
+.item.sold-out .pic {
+  position: relative;
+}
+
+.item.sold-out .pic img,
+.item.sold-out .pic svg {
+  filter: blur(3px) grayscale(0.55);
+  transform: scale(1.04);
+}
+
+.soldout-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 4px #000;
+}
+
+.qty button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}

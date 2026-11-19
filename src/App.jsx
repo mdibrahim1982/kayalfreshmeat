@@ -59,13 +59,29 @@ const PhonePeIcon = () => (
 );
 const GPayIcon = () => <img className="appicon" src={gpayIcon} alt="" />;
 
-function Qty({ line, q, set }) {
+function Qty({ line, q, set, disabled = false }) {
   const step = line.step || (line.kind === "kg" ? 0.25 : 1);
+
   return (
     <div className="qty">
-      <button aria-label="குறை" onClick={() => { const n = +(q - step).toFixed(2); set(line.id, n < (line.min || 0) ? 0 : Math.max(0, n)); }}>−</button>
+      <button
+        aria-label="குறை"
+        disabled={disabled}
+        onClick={() => {
+          const n = +(q - step).toFixed(2);
+          set(line.id, n < (line.min || 0) ? 0 : Math.max(0, n));
+        }}
+      >−</button>
+
       <span>{q ? fmtQty(line, q) : "0"}</span>
-      <button aria-label="கூட்டு" onClick={() => set(line.id, q === 0 && line.min ? line.min : +(q + step).toFixed(2))}>+</button>
+
+      <button
+        aria-label="கூட்டு"
+        disabled={disabled}
+        onClick={() =>
+          set(line.id, q === 0 && line.min ? line.min : +(q + step).toFixed(2))
+        }
+      >+</button>
     </div>
   );
 }
@@ -103,6 +119,61 @@ export default function App() {
   const total = items.reduce((s, i) => s + i.amt, 0);
   const [qrUrl, setQrUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [weeklyAvailability, setWeeklyAvailability] = useState({});
+
+useEffect(() => {
+  if (!ORDER_ENDPOINT) return;
+
+  const callbackName = "kfmAvailability_" + Date.now();
+  const script = document.createElement("script");
+
+  window[callbackName] = data => {
+    if (data && data.success && Array.isArray(data.products)) {
+      const stock = {};
+
+      data.products.forEach(p => {
+        stock[p.name] = {
+          limit: p.limit,
+          remaining: p.remaining
+        };
+      });
+
+      setWeeklyAvailability(stock);
+
+      // Remove sold-out products from any saved cart.
+      setCart(current => {
+        const updated = { ...current };
+
+        PRODUCTS.forEach(p => {
+          const item = stock[p.name];
+
+          if (item && item.limit !== null && item.remaining <= 0) {
+            if (p.variants) {
+              p.variants.forEach(v => updated[v.id] = 0);
+            } else {
+              updated[p.id] = 0;
+            }
+          }
+        });
+
+        return updated;
+      });
+    }
+  };
+
+  script.src =
+    ORDER_ENDPOINT +
+    "?callback=" + callbackName +
+    "&t=" + Date.now();
+
+  script.async = true;
+  document.body.appendChild(script);
+
+  return () => {
+    delete window[callbackName];
+    script.remove();
+  };
+}, []);
   // Always show the popup from the top when it opens or the step changes
   const panelRef = useRef(null);
   useEffect(() => {
@@ -258,29 +329,60 @@ export default function App() {
         </div>
 
         <div className="grid">
-          {PRODUCTS.map(p => {
-            const photo = photoFor(p.id);
-            return (
-              <div className="item" key={p.id}>
-                <div className="pic">{photo ? <img src={photo} alt={p.name} loading="lazy" /> : <Art id={p.id} />}</div>
-                <div className="body">
-                  <h3>{p.name}</h3>
-                  {p.sub && <small>{p.sub}</small>}
-                  {p.variants ? p.variants.map(v => (
-                    <div className="var" key={v.id}>
-                      <div className="row"><span>{v.label}</span><span className="price">₹{v.price}</span></div>
-                      <div className="row center"><Qty line={LINES.find(x => x.id === v.id)} q={cart[v.id] || 0} set={setQ} /></div>
-                    </div>
-                  )) : (
-                    <>
-                      <div className="row"><span className="price">₹{p.showPrice ?? p.price} / {p.per || "கிலோ"}</span></div>
-                      <div className="row center"><Qty line={LINES.find(x => x.id === p.id)} q={cart[p.id] || 0} set={setQ} /></div>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+         {PRODUCTS.map(p => {
+  const photo = photoFor(p.id);
+  const stock = weeklyAvailability[p.name];
+  const soldOut = stock && stock.limit !== null && stock.remaining <= 0;
+
+  return (
+    <div className={`item ${soldOut ? "sold-out" : ""}`} key={p.id}>
+      <div className="pic">
+        {photo ? <img src={photo} alt={p.name} loading="lazy" /> : <Art id={p.id} />}
+        {soldOut && (
+          <div className="soldout-label">
+            SOLD OUT FOR THIS WEEK
+          </div>
+        )}
+      </div>
+
+      <div className="body">
+        <h3>{p.name}</h3>
+        {p.sub && <small>{p.sub}</small>}
+
+        {p.variants ? p.variants.map(v => (
+          <div className="var" key={v.id}>
+            <div className="row">
+              <span>{v.label}</span>
+              <span className="price">₹{v.price}</span>
+            </div>
+            <div className="row center">
+              <Qty
+                line={LINES.find(x => x.id === v.id)}
+                q={cart[v.id] || 0}
+                set={setQ}
+                disabled={soldOut}
+              />
+            </div>
+          </div>
+        )) : (
+          <>
+            <div className="row">
+              <span className="price">₹{p.showPrice ?? p.price} / {p.per || "கிலோ"}</span>
+            </div>
+            <div className="row center">
+              <Qty
+                line={LINES.find(x => x.id === p.id)}
+                q={cart[p.id] || 0}
+                set={setQ}
+                disabled={soldOut}
+              />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+})}
         </div>
         <div className="disc">📷 <b>குறிப்பு:</b> பொருட்களின் படங்கள் குறிப்புக்காக மட்டுமே. அவை உண்மையான பொருட்கள் அல்ல.</div>
       </div>
