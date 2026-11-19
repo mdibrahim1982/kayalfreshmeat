@@ -119,6 +119,7 @@ export default function App() {
   const total = items.reduce((s, i) => s + i.amt, 0);
   const [qrUrl, setQrUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [orderError, setOrderError] = useState("");
   const [weeklyAvailability, setWeeklyAvailability] = useState({});
 
 useEffect(() => {
@@ -204,72 +205,133 @@ useEffect(() => {
     setErrs(e);
     return !Object.keys(e).length;
   };
-  const open = () => { setStep(1); setPaid(false); setPayMobile(""); setOrderId(String(Date.now()).slice(-6)); setSheet(true); };
+  
+const open = () => {
+  setOrderError("");
+
+  const requested = {};
+
+  items.forEach(i => {
+    const parent = PRODUCTS.find(p =>
+      p.variants
+        ? p.variants.some(v => v.id === i.id)
+        : p.id === i.id
+    );
+
+    const name = parent ? parent.name : i.name;
+    requested[name] = (requested[name] || 0) + i.q;
+  });
+
+  for (const [name, quantity] of Object.entries(requested)) {
+    const stock = weeklyAvailability[name];
+
+    if (
+      stock &&
+      stock.limit !== null &&
+      quantity > stock.remaining
+    ) {
+      setOrderError(
+        `${name}: இந்த வாரம் மீதமுள்ள அளவு ${stock.remaining}. நீங்கள் தேர்ந்தெடுத்த அளவு ${quantity}. அளவைக் குறைத்து மீண்டும் முயற்சிக்கவும்.`
+      );
+      return;
+    }
+  }
+
+  setStep(1);
+  setPaid(false);
+  setPayMobile("");
+  setOrderId(String(Date.now()).slice(-6));
+  setSheet(true);
+};
+
 
   // Silently saves the order the moment the customer moves on (no customer action needed)
   // Silently saves the order with structured product quantities.
-  const postOrder = (status) => {
-    if (!ORDER_ENDPOINT) return;
+  
+const postOrder = async (status) => {
+  if (!ORDER_ENDPOINT) {
+    throw new Error("Order server is not configured.");
+  }
 
-    try {
-      fetch(ORDER_ENDPOINT, {
-        method: "POST",
-        mode: "no-cors",
-        keepalive: true,
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify({
-          orderId,
-          status,
-          payMobile,
-          time: new Date().toISOString(),
-          delivery: sunStr,
-          name: f.name,
-          mobile: f.mobile,
-          alt: f.alt,
-          address: f.address,
-          area: f.area,
-          landmark: f.landmark,
-          notes: f.notes,
-          total,
+  const response = await fetch(ORDER_ENDPOINT, {
+    method: "POST",
+    mode: "cors",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify({
+      orderId,
+      status,
+      payMobile,
+      time: new Date().toISOString(),
+      delivery: sunStr,
+      name: f.name,
+      mobile: f.mobile,
+      alt: f.alt,
+      address: f.address,
+      area: f.area,
+      landmark: f.landmark,
+      notes: f.notes,
+      total,
 
-          items: items.map(i =>
-            `${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`
-          ).join("\\n"),
+      items: items.map(i =>
+        `${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`
+      ).join("\n"),
 
-          itemDetails: items.map(i => {
-            const parent = PRODUCTS.find(p =>
-              p.variants
-                ? p.variants.some(v => v.id === i.id)
-                : p.id === i.id
-            );
+      itemDetails: items.map(i => {
+        const parent = PRODUCTS.find(p =>
+          p.variants
+            ? p.variants.some(v => v.id === i.id)
+            : p.id === i.id
+        );
 
-            return {
-              id: parent ? parent.id : i.id,
-              name: parent ? parent.name : i.name,
-              quantity: i.q,
-              unit: i.kind === "kg" ? "kg" : "piece"
-            };
-          })
-        })
-      });
-    } catch (e) {
-      console.error("Order submission failed:", e);
-    }
-  };
+        return {
+          id: parent ? parent.id : i.id,
+          name: parent ? parent.name : i.name,
+          quantity: i.q,
+          unit: i.kind === "kg" ? "kg" : "piece"
+        };
+      })
+    })
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || "Order could not be saved.");
+  }
+
+  return result;
+};
+
 
   // Shows a loading state until the order is saved and the payment QR is ready
-  const next = async () => {
-    if (loading || !validate()) return;
-    setLoading(true);
-    postOrder("பணம் நிலுவை");
-    try { setQrUrl(await QRCode.toDataURL(upiLink(total, orderId), { width: 480, margin: 2, errorCorrectionLevel: "M" })); }
-    catch (e) { setQrUrl(""); }
-    await new Promise(r => setTimeout(r, 600));
+  
+const next = async () => {
+  if (loading || !validate()) return;
+
+  setLoading(true);
+  setOrderError("");
+
+  try {
+    await postOrder("பணம் நிலுவை");
+
+    setQrUrl(
+      await QRCode.toDataURL(
+        upiLink(total, orderId),
+        { width: 480, margin: 2, errorCorrectionLevel: "M" }
+      )
+    );
+
     setStep(2);
+  } catch (e) {
+    console.error("Order submission failed:", e);
+    setOrderError(e.message || "ஆர்டரைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.");
+  } finally {
     setLoading(false);
-  };
+  }
+};
+
 
   const msg = () => [
     `*புதிய முன்பதிவு – ${SHOP}*`,
@@ -292,12 +354,32 @@ useEffect(() => {
 
   const payOk = /^[6-9]\d{9}$/.test(payMobile.trim());
   // Only possible after the payment is marked done AND a valid 10-digit paying mobile number is entered
-  const sendOrder = () => {
-    if (!paid || !payOk) return;
-    postOrder("பணம் செலுத்தப்பட்டது");
-    window.open(`https://wa.me/${WA}?text=${encodeURIComponent(msg())}`, "_blank");
-    setSheet(false); setDone(true); window.scrollTo({ top: 0 });
-  };
+ 
+const sendOrder = async () => {
+  if (!paid || !payOk || loading) return;
+
+  setLoading(true);
+  setOrderError("");
+
+  try {
+    await postOrder("பணம் செலுத்தப்பட்டது");
+
+    window.open(
+      `https://wa.me/${WA}?text=${encodeURIComponent(msg())}`,
+      "_blank"
+    );
+
+    setSheet(false);
+    setDone(true);
+    window.scrollTo({ top: 0 });
+  } catch (e) {
+    console.error("Payment update failed:", e);
+    setOrderError(e.message || "ஆர்டர் புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.");
+  } finally {
+    setLoading(false);
+  }
+};
+
   const copy = t => { try { navigator.clipboard.writeText(t); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
 
   if (done) return (
@@ -399,6 +481,7 @@ useEffect(() => {
 
       {items.length > 0 && !sheet && (
         <div className="cartbar">
+          {orderError && <div className="err">{orderError}</div>}
           <div><b>{items.length} பொருட்கள்</b><br /><span>மொத்தம் ₹{total}</span></div>
           <div className="cb-btns">
             <button className="btn ghost-w" onClick={clearCart}>🗑 அழிக்க</button>
@@ -444,6 +527,7 @@ useEffect(() => {
                 <label>அடையாளம் / கூகுள் மேப் இணைப்பு *</label>
                 <input value={f.landmark} onChange={up("landmark")} placeholder="பள்ளிவாசல், கடை அருகில் அல்லது கூகுள் மேப் இணைப்பு" />
                 {errs.landmark && <div className="err">{errs.landmark}</div>}
+                {orderError && <div className="err">{orderError}</div>}
                 <details>
                   <summary>+ கூடுதல் விவரங்கள் (விருப்பம்)</summary>
                   <label>மாற்று மொபைல் எண்</label>
@@ -468,6 +552,7 @@ useEffect(() => {
                 <label>பணம் செலுத்திய மொபைல் எண் (ஜிபே / போன்பே) – 10 இலக்கம் *</label>
                 <input value={payMobile} onChange={e => setPayMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" maxLength={10} placeholder="எ.கா. 9876543210" />
                 {payMobile && !payOk && <div className="err">சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.</div>}
+                {orderError && <div className="err">{orderError}</div>}
                 <label className="chk"><input type="checkbox" checked={paid} onChange={e => setPaid(e.target.checked)} /><span>₹{total} பணம் செலுத்திவிட்டேன்.</span></label>
                 <div className="cta">
                   <button className="btn wa" disabled={!paid || !payOk} onClick={sendOrder}>📲 வாட்ஸ்அப்பில் ஆர்டரை அனுப்ப</button>

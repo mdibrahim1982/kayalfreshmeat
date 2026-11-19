@@ -226,3 +226,12 @@ h2{margin:14px 0 8px}
   cursor: not-allowed;
   box-shadow: none;
 }
+.cartbar .err {
+  color: #ffdddd;
+  background: rgba(180, 0, 0, 0.25);
+  border: 1px solid #ff9999;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
