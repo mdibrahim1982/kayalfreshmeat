@@ -136,19 +136,58 @@ export default function App() {
   const open = () => { setStep(1); setPaid(false); setPayMobile(""); setOrderId(String(Date.now()).slice(-6)); setSheet(true); };
 
   // Silently saves the order the moment the customer moves on (no customer action needed)
+  // Silently saves the order with structured product quantities.
   const postOrder = (status) => {
     if (!ORDER_ENDPOINT) return;
+
     try {
       fetch(ORDER_ENDPOINT, {
-        method: "POST", mode: "no-cors", keepalive: true, headers: { "Content-Type": "text/plain;charset=utf-8" },
+        method: "POST",
+        mode: "no-cors",
+        keepalive: true,
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
         body: JSON.stringify({
-          orderId, status, payMobile, time: new Date().toISOString(), delivery: sunStr, name: f.name, mobile: f.mobile, alt: f.alt,
-          address: f.address, area: f.area, landmark: f.landmark, notes: f.notes, total,
-          items: items.map(i => `${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`).join("\n"),
-        }),
+          orderId,
+          status,
+          payMobile,
+          time: new Date().toISOString(),
+          delivery: sunStr,
+          name: f.name,
+          mobile: f.mobile,
+          alt: f.alt,
+          address: f.address,
+          area: f.area,
+          landmark: f.landmark,
+          notes: f.notes,
+          total,
+
+          items: items.map(i =>
+            `${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`
+          ).join("\\n"),
+
+          itemDetails: items.map(i => {
+            const parent = PRODUCTS.find(p =>
+              p.variants
+                ? p.variants.some(v => v.id === i.id)
+                : p.id === i.id
+            );
+
+            return {
+              id: parent ? parent.id : i.id,
+              name: parent ? parent.name : i.name,
+              quantity: i.q,
+              unit: i.kind === "kg" ? "kg" : "piece"
+            };
+          })
+        })
       });
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      console.error("Order submission failed:", e);
+    }
   };
+
   // Shows a loading state until the order is saved and the payment QR is ready
   const next = async () => {
     if (loading || !validate()) return;
