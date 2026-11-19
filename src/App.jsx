@@ -24,7 +24,7 @@ const SHOP = "காயல் ஃப்ரெஷ் மீட்";
 const PRODUCTS = [
   { id: "beef", name: "பீஃப்", kind: "kg", price: 450, q250: 115 },
   { id: "thanikari", name: "தனி கறி", kind: "kg", price: 500 },
-  { id: "kottu", name: "கொத்துக்கறி", kind: "kg", price: 480 },
+  { id: "kottu", name: "கொத்துக்கறி", kind: "kg", price: 500 },
   { id: "liver", name: "ஈரல்", kind: "kg", price: 450, q250: 115 },
   { id: "brain", name: "மூளை", kind: "unit", variants: [
     { id: "brain-s", label: "சிறியது", price: 120 },
@@ -183,9 +183,17 @@ export default function App() {
     </div>
   );
 
+  const clearCart = () => { if (window.confirm("தேர்ந்தெடுத்த எல்லா பொருட்களையும் நீக்கவா?")) setCart({}); };
+
   return (
     <>
-      <div className="wrap herowrap"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
+      <nav className="topnav" aria-label="முதன்மை மெனு">
+        <a href="#top">🏠 முகப்பு</a>
+        <a href="#products">🥩 பொருட்கள்</a>
+        <a href="#order">🛒 ஆர்டர் செய்ய{items.length > 0 && <em>{items.length}</em>}</a>
+        <a href="#contact">📞 தொடர்புக்கு</a>
+      </nav>
+      <div className="wrap herowrap" id="top"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
       <div className="wrap">
         <div className="banner">
           <div className="bk">📅 திங்கள் முதல் சனி வரை முன்பதிவு · 🛵 ஞாயிறு காலை 9.30 – 11.30 டெலிவரி</div>
@@ -196,7 +204,15 @@ export default function App() {
           </div>
         </div>
 
-        <h2>எங்கள் பொருட்கள்</h2>
+        <h2 id="products">எங்கள் பொருட்கள்</h2>
+        <div className="ordersec" id="order">
+          <div className="os-info"><b>🛒 {items.length} பொருட்கள்</b><span>மொத்தம் ₹{total}</span></div>
+          <div className="os-btns">
+            <button className="btn" disabled={!items.length} onClick={open}>ஆர்டர் செய்ய →</button>
+            <button className="btn ghost" disabled={!items.length} onClick={clearCart}>🗑 அழிக்க</button>
+          </div>
+          {!items.length && <small>கீழே உள்ள பொருட்களில் + அழுத்தி தேர்ந்தெடுக்கவும்.</small>}
+        </div>
         <div className="grid">
           {PRODUCTS.map(p => {
             const photo = photoFor(p.id);
@@ -225,7 +241,7 @@ export default function App() {
         <div className="disc">📷 <b>குறிப்பு:</b> பொருட்களின் படங்கள் குறிப்புக்காக மட்டுமே. அவை உண்மையான பொருட்கள் அல்ல.</div>
       </div>
 
-      <footer style={{ paddingBottom: items.length ? 96 : undefined }}>
+      <footer id="contact" style={{ paddingBottom: items.length ? 96 : undefined }}>
         <img className="foot-img" src={footerImg} alt="தொடர்பு கொள்ள 7601 915355 – கல்யாண, கேட்டரிங் ஆடர்கள் மற்றும் இலவச டோர் டெலிவரி" />
         <div className="contact">
           <b>தொடர்புக்கு</b><br />
@@ -238,7 +254,10 @@ export default function App() {
       {items.length > 0 && !sheet && (
         <div className="cartbar">
           <div><b>{items.length} பொருட்கள்</b><br /><span>மொத்தம் ₹{total}</span></div>
-          <button className="btn yel" onClick={open}>ஆர்டர் செய்ய →</button>
+          <div className="cb-btns">
+            <button className="btn ghost-w" onClick={clearCart}>🗑 அழிக்க</button>
+            <button className="btn yel" onClick={open}>ஆர்டர் செய்ய →</button>
+          </div>
         </div>
       )}
 
