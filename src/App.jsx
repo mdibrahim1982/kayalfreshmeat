@@ -187,13 +187,7 @@ export default function App() {
 
   return (
     <>
-      <nav className="topnav" aria-label="முதன்மை மெனு">
-        <a href="#top">🏠 முகப்பு</a>
-        <a href="#products">🥩 பொருட்கள்</a>
-        <a href="#order">🛒 ஆர்டர் செய்ய{items.length > 0 && <em>{items.length}</em>}</a>
-        <a href="#contact">📞 தொடர்புக்கு</a>
-      </nav>
-      <div className="wrap herowrap" id="top"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
+      <div className="wrap herowrap"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
       <div className="wrap">
         <div className="banner">
           <div className="bk">📅 திங்கள் முதல் சனி வரை முன்பதிவு · 🛵 ஞாயிறு காலை 9.30 – 11.30 டெலிவரி</div>
@@ -204,15 +198,6 @@ export default function App() {
           </div>
         </div>
 
-        <h2 id="products">எங்கள் பொருட்கள்</h2>
-        <div className="ordersec" id="order">
-          <div className="os-info"><b>🛒 {items.length} பொருட்கள்</b><span>மொத்தம் ₹{total}</span></div>
-          <div className="os-btns">
-            <button className="btn" disabled={!items.length} onClick={open}>ஆர்டர் செய்ய →</button>
-            <button className="btn ghost" disabled={!items.length} onClick={clearCart}>🗑 அழிக்க</button>
-          </div>
-          {!items.length && <small>கீழே உள்ள பொருட்களில் + அழுத்தி தேர்ந்தெடுக்கவும்.</small>}
-        </div>
         <div className="grid">
           {PRODUCTS.map(p => {
             const photo = photoFor(p.id);
