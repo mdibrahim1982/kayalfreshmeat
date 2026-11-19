@@ -182,3 +182,10 @@ h2{margin:14px 0 8px}
 .loadov{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(255,255,255,.7);backdrop-filter:blur(2px)}
 .loadcard{background:#fff;border:2px solid var(--yellow);border-radius:16px;padding:22px 26px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.2);color:var(--green);font-weight:700}
 .loadcard p{margin:0}
+
+/* payee rows: keep the copy button inside the screen on small phones */
+.panel{overflow-x:hidden}
+.panel .pay div{flex-wrap:wrap;row-gap:6px}
+.panel .pay span{flex:none}
+.panel .pay b{min-width:0;overflow-wrap:anywhere;margin-right:auto}
+.panel .pay .btn.sm{flex:none;white-space:nowrap;margin-left:auto;padding:5px 12px}
