@@ -102,6 +102,7 @@ export default function App() {
   const items = LINES.filter(l => cart[l.id] > 0).map(l => ({ ...l, q: cart[l.id], amt: l.q250 && cart[l.id] === 0.25 ? l.q250 : Math.round(l.price * cart[l.id]) }));
   const total = items.reduce((s, i) => s + i.amt, 0);
   const [qrUrl, setQrUrl] = useState("");
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (!sheet || step !== 2 || !total) return;
     let live = true;
@@ -126,54 +127,30 @@ export default function App() {
   const open = () => { setStep(1); setPaid(false); setPayMobile(""); setOrderId(String(Date.now()).slice(-6)); setSheet(true); };
 
   // Silently saves the order the moment the customer moves on (no customer action needed)
-  
-  // Sends an order to Google Sheets.
-  // The same Order ID updates the existing spreadsheet row.
-  const postOrder = async (status) => {
-    if (!ORDER_ENDPOINT) {
-      console.error("Google Sheets endpoint is not configured.");
-      return;
-    }
-
-    await fetch(ORDER_ENDPOINT, {
-      method: "POST",
-      mode: "no-cors",
-      keepalive: true,
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify({
-        orderId,
-        status,
-        payMobile,
-        time: new Date().toISOString(),
-        delivery: sunStr,
-        name: f.name,
-        mobile: f.mobile,
-        alt: f.alt,
-        address: f.address,
-        area: f.area,
-        landmark: f.landmark,
-        notes: f.notes,
-        total,
-        items: items.map(i =>
-          `${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`
-        ).join("\n")
-      })
-    });
+  const postOrder = (status) => {
+    if (!ORDER_ENDPOINT) return;
+    try {
+      fetch(ORDER_ENDPOINT, {
+        method: "POST", mode: "no-cors", keepalive: true, headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          orderId, status, payMobile, time: new Date().toISOString(), delivery: sunStr, name: f.name, mobile: f.mobile, alt: f.alt,
+          address: f.address, area: f.area, landmark: f.landmark, notes: f.notes, total,
+          items: items.map(i => `${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`).join("\n"),
+        }),
+      });
+    } catch (e) { /* ignore */ }
   };
-
+  // Shows a loading state until the order is saved and the payment QR is ready
   const next = async () => {
-  if (!validate()) return;
-
-  try {
-    await postOrder("பணம் நிலுவை");
+    if (loading || !validate()) return;
+    setLoading(true);
+    postOrder("பணம் நிலுவை");
+    try { setQrUrl(await QRCode.toDataURL(upiLink(total, orderId), { width: 480, margin: 2, errorCorrectionLevel: "M" })); }
+    catch (e) { setQrUrl(""); }
+    await new Promise(r => setTimeout(r, 600));
     setStep(2);
-  } catch (error) {
-    console.error("Order submission failed:", error);
-    alert("ஆர்டரை அனுப்ப முடியவில்லை. இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.");
-  }
-};
+    setLoading(false);
+  };
 
   const msg = () => [
     `*புதிய முன்பதிவு – ${SHOP}*`,
@@ -283,6 +260,11 @@ export default function App() {
       {sheet && (
         <div className="modal" onClick={() => setSheet(false)}>
           <div className="panel" onClick={e => e.stopPropagation()}>
+            {loading && (
+              <div className="loadov" role="status" aria-live="polite">
+                <div className="loadcard"><span className="spin lg" /><p>பணம் செலுத்தும் பக்கம் தயாராகிறது…<br />சற்று காத்திருக்கவும்</p></div>
+              </div>
+            )}
             <div className="phead">
               <div><small>{SHOP}</small><b>{step === 1 ? "🛵 டெலிவரி விவரங்கள்" : "💳 பணம் செலுத்தி ஆர்டர் செய்ய"}</b></div>
               <button className="x" aria-label="மூடு" onClick={() => setSheet(false)}>✕</button>
@@ -319,7 +301,7 @@ export default function App() {
                   <label>சிறப்பு குறிப்புகள்</label>
                   <input value={f.notes} onChange={up("notes")} placeholder="பீஸ் அளவு, சுத்தம் போன்றவை" />
                 </details>
-                <button className="btn big" onClick={next}>அடுத்து: பணம் செலுத்த →</button>
+                <button className="btn big" disabled={loading} onClick={next}>{loading ? <><span className="spin" /> ஏற்றுகிறது…</> : "அடுத்து: பணம் செலுத்த →"}</button>
               </>
             ) : (
               <>

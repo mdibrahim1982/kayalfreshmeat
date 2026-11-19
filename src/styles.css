@@ -174,3 +174,11 @@ h2{margin:14px 0 8px}
 .btn.ghost-w{background:transparent;color:#fff;border:1.5px solid #fff}
 .btn.ghost-w:hover{background:rgba(255,255,255,.18)}
 .cartbar .btn{padding:10px 12px;font-size:.9rem}
+
+/* loading state */
+.spin{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px;margin-right:6px}
+.spin.lg{width:44px;height:44px;border-width:5px;border-color:#e6dcb5;border-top-color:var(--red);margin:0 0 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loadov{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(255,255,255,.7);backdrop-filter:blur(2px)}
+.loadcard{background:#fff;border:2px solid var(--yellow);border-radius:16px;padding:22px 26px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.2);color:var(--green);font-weight:700}
+.loadcard p{margin:0}
