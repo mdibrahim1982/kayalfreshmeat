@@ -314,7 +314,7 @@ export default function App() {
               </>
             ) : (
               <>
-                <div className="amt"><small>செலுத்த வேண்டிய தொகை · ஆர்டர் #{orderId}</small>₹{total}</div>
+                <div className="amt"><small>செலுத்த வேண்டிய தொகை</small><span>₹{total}</span></div>
                 <div className="qrbox">
                   <div className="qrapps"><span className="app"><GPayIcon /><b>ஜிபே</b></span><span className="app"><PhonePeIcon /><b>போன்பே</b></span></div>
                   <img className="qr" src={qrUrl || qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
