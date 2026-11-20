@@ -79,6 +79,31 @@ function saveOrder_(d) {
 }
 
 // ---------- Products ----------
+// The products of the website (same ids and names as PRODUCTS in src/App.jsx). Sheet rows are matched to these
+// leniently (spelling variants, English names like "Beef", extra words), so small naming differences don't matter.
+var APP_PRODUCTS = [
+  { id: "beef", name: "பீஃப்" }, { id: "thanikari", name: "தனி கறி" }, { id: "kottu", name: "கொத்துக்கறி" },
+  { id: "liver", name: "ஈரல்" }, { id: "brain", name: "மூளை" }, { id: "spleen", name: "பல்குத்தி / மண்ணீரல்" },
+  { id: "kudal", name: "குடல்" }, { id: "kidney", name: "கிட்னி" }, { id: "tail", name: "வால்" }
+];
+
+// Comparison key: Unicode-normalised, without spaces, punctuation, zero-width marks or the Tamil aytham sign (ஃ)
+function key_(s) {
+  var t = String(s === null || s === undefined ? "" : s);
+  if (t.normalize) { t = t.normalize("NFC"); }
+  return t.toLowerCase().replace(/[\u200B-\u200D\uFEFF\u0B83]/g, "").replace(/[\s\-_\/\\.,:;()\[\]{}'"]+/g, "");
+}
+
+// Which website product does a Products-sheet cell (or an order line) mean? Returns its APP_PRODUCTS entry or null.
+function appProduct_(text, id) {
+  var k = key_(text), i, a;
+  if (id) { for (i = 0; i < APP_PRODUCTS.length; i++) { if (APP_PRODUCTS[i].id === id && k && (key_(APP_PRODUCTS[i].name) === k || APP_PRODUCTS[i].id === k)) { return APP_PRODUCTS[i]; } } }
+  for (i = 0; i < APP_PRODUCTS.length; i++) { a = APP_PRODUCTS[i]; if (k && (k === key_(a.name) || k === a.id)) { return a; } }
+  for (i = 0; i < APP_PRODUCTS.length; i++) { a = APP_PRODUCTS[i]; if (k.length >= 3 && (k.indexOf(key_(a.name)) !== -1 || key_(a.name).indexOf(k) !== -1)) { return a; } }
+  for (i = 0; i < APP_PRODUCTS.length; i++) { a = APP_PRODUCTS[i]; if (k.indexOf(a.id) !== -1) { return a; } }
+  return null;
+}
+function num_(v) { var n = parseFloat(String(v === null || v === undefined ? "" : v).replace(/,/g, "")); return isNaN(n) ? 0 : n; }
 function productsInfo_() {
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PRODUCTS_SHEET);
   if (!sh || sh.getLastRow() < 1) { return null; }
@@ -92,25 +117,41 @@ function productsInfo_() {
 function numberOrNull_(v) { if (v === "" || v === null || v === undefined) { return null; } var n = Number(v); return isNaN(n) ? null : n; }
 
 // Adds (sign = 1) or removes (sign = -1) an order's quantities from "Ordered This Week".
+// Returns the names of ordered products that could not be found in the Products sheet.
 function addOrdered_(details, sign) {
-  var p = productsInfo_();
-  if (!p || !details || !details.length || p.sh.getLastRow() < 2) { return; }
+  var p = productsInfo_(), missing = [];
+  if (!p || !details || !details.length || p.sh.getLastRow() < 2) { return missing; }
   var n = p.sh.getLastRow() - 1;
   var names = p.sh.getRange(2, p.name, n, 1).getValues();
   var ordered = p.sh.getRange(2, p.ordered, n, 1).getValues();
   var limits = p.limit ? p.sh.getRange(2, p.limit, n, 1).getValues() : null;
-  var totals = {};
-  details.forEach(function (it) { var k = norm_(it.name); totals[k] = (totals[k] || 0) + Number(it.quantity || 0); });
+  var totals = {}; // website product id -> quantity
+  details.forEach(function (it) {
+    var ap = appProduct_(it.name, it.id) || appProduct_(it.id, it.id);
+    var k = ap ? ap.id : "name:" + key_(it.name);
+    totals[k] = (totals[k] || 0) + num_(it.quantity);
+    totals["label:" + k] = it.name;
+  });
+  var used = {};
   for (var r = 0; r < n; r++) {
-    var q = totals[norm_(names[r][0])];
-    if (!q) { continue; }
-    var now = Math.max(0, Math.round(((Number(ordered[r][0]) || 0) + sign * q) * 100) / 100);
+    var ap2 = appProduct_(names[r][0]);
+    var k2 = ap2 ? ap2.id : "name:" + key_(names[r][0]);
+    var q = totals[k2];
+    if (!q || used[k2]) { continue; }
+    used[k2] = true;
+    var now = Math.max(0, Math.round((num_(ordered[r][0]) + sign * q) * 100) / 100);
     p.sh.getRange(r + 2, p.ordered).setValue(now);
     if (p.remaining && limits && !p.sh.getRange(r + 2, p.remaining).getFormula()) {
       var lim = numberOrNull_(limits[r][0]);
       if (lim !== null) { p.sh.getRange(r + 2, p.remaining).setValue(Math.max(0, Math.round((lim - now) * 100) / 100)); }
     }
   }
+  Object.keys(totals).forEach(function (k) {
+    if (k.indexOf("label:") === 0 || !totals[k] || used[k]) { return; }
+    missing.push(totals["label:" + k]);
+  });
+  if (missing.length) { Logger.log("Not found in Products sheet: " + missing.join(", ")); }
+  return missing;
 }
 
 // ---------- Web app ----------
@@ -120,10 +161,10 @@ function doPost(e) {
   try {
     var d = JSON.parse(e.postData.contents);
     var countNow = saveOrder_(d);
-    if (countNow) { addOrdered_(d.itemDetails, 1); }
+    var missing = countNow ? addOrdered_(d.itemDetails, 1) : [];
     // Optional email alert - remove the // to use:
     // MailApp.sendEmail("your-email@example.com", "Order #" + d.orderId + " - " + d.status, d.name + " " + d.mobile + "\n" + d.items + "\nTotal: " + d.total);
-    return json_({ success: true });
+    return json_({ success: true, notFoundInProducts: missing });
   } catch (err) {
     return json_({ success: false, error: String(err) });
   } finally {
@@ -144,8 +185,9 @@ function doGet(e) {
       for (var r = 0; r < n; r++) {
         if (!String(names[r][0]).trim()) { continue; }
         var lim = limits ? numberOrNull_(limits[r][0]) : null;
-        var used = Number(ordered[r][0]) || 0;
-        out.products.push({ name: String(names[r][0]).trim(), limit: lim, remaining: lim === null ? null : Math.max(0, lim - used) });
+        var used = num_(ordered[r][0]);
+        var ap = appProduct_(names[r][0]);
+        out.products.push({ name: ap ? ap.name : String(names[r][0]).trim(), limit: lim, remaining: lim === null ? null : Math.max(0, lim - used) });
       }
     }
   } catch (err) { out = { success: false, error: String(err) }; }
