@@ -120,6 +120,13 @@ export default function App() {
   const total = items.reduce((s, i) => s + i.amt, 0);
   const [qrUrl, setQrUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 300);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const goToErrorProduct = () => {
     if (!errorProduct) return;
     const el = document.getElementById(`prod-${errorProduct}`);
@@ -418,16 +425,6 @@ const sendOrder = async () => {
 
   return (
     <>
-      <nav className="topnav">
-        <a className="brand" href="#top" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-          <img src="/favicon.png" alt="" />
-          <span>காயல் ஃப்ரெஷ் மீட்</span>
-        </a>
-        <div className="navicons">
-          <a href={`tel:+91${PHONE}`} aria-label="அழைக்க" title="அழைக்க">📞</a>
-          <a href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer" aria-label="வாட்ஸ்அப்" title="வாட்ஸ்அப்">💬</a>
-        </div>
-      </nav>
       <div className="wrap herowrap"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
       <div className="wrap">
         <div className="banner">
@@ -507,6 +504,10 @@ const sendOrder = async () => {
           📞 <a href={`tel:+91${PHONE}`}>{PHONE_SHOW}</a> · <a href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer">வாட்ஸ்அப்</a>
         </div>
       </footer>
+
+      {showTop && !sheet && (
+        <button className={`totop ${items.length > 0 ? "withcart" : ""}`} aria-label="மேலே செல்ல" title="மேலே செல்ல" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>↑</button>
+      )}
 
       {items.length > 0 && !sheet && (
         <div className="cartbar">
