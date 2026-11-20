@@ -120,7 +120,16 @@ export default function App() {
   const total = items.reduce((s, i) => s + i.amt, 0);
   const [qrUrl, setQrUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const goToErrorProduct = () => {
+    if (!errorProduct) return;
+    const el = document.getElementById(`prod-${errorProduct}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 2200);
+  };
   const [orderError, setOrderError] = useState("");
+  const [errorProduct, setErrorProduct] = useState(null); // product to jump to when the stock error is tapped
   const [weeklyAvailability, setWeeklyAvailability] = useState({});
 
 useEffect(() => {
@@ -209,6 +218,7 @@ useEffect(() => {
   
 const open = () => {
   setOrderError("");
+  setErrorProduct(null);
 
   const requested = {};
 
@@ -223,6 +233,12 @@ const open = () => {
     requested[name] = (requested[name] || 0) + i.q;
   });
 
+  const parentIdByName = {};
+  items.forEach(i => {
+    const parent = PRODUCTS.find(p => p.variants ? p.variants.some(v => v.id === i.id) : p.id === i.id);
+    if (parent) parentIdByName[parent.name] = parent.id;
+  });
+
   for (const [name, quantity] of Object.entries(requested)) {
     const stock = weeklyAvailability[name];
 
@@ -234,6 +250,7 @@ const open = () => {
       setOrderError(
         `ஸ்டாக்கில் உள்ளது ${stock.remaining} மட்டுமே.`
       );
+      setErrorProduct(parentIdByName[name] || null);
       return;
     }
   }
@@ -419,7 +436,7 @@ const sendOrder = async () => {
   const soldOut = stock && stock.limit !== null && stock.remaining <= 0;
 
   return (
-    <div className={`item ${soldOut ? "sold-out" : ""}`} key={p.id}>
+    <div id={`prod-${p.id}`} className={`item ${soldOut ? "sold-out" : ""}`} key={p.id}>
       <div className="pic">
         {photo ? <img src={photo} alt={p.name} loading="lazy" /> : <Art id={p.id} />}
         {soldOut && (
@@ -483,7 +500,11 @@ const sendOrder = async () => {
 
       {items.length > 0 && !sheet && (
         <div className="cartbar">
-          {orderError && <div className="err">{orderError}</div>}
+          {orderError && (
+            <div className={`err ${errorProduct ? "tap" : ""}`} role={errorProduct ? "button" : undefined} onClick={goToErrorProduct}>
+              {orderError}{errorProduct ? " 👆" : ""}
+            </div>
+          )}
           <div><b>{items.length} பொருட்கள்</b><br /><span>மொத்தம் ₹{total}</span></div>
           <div className="cb-btns">
             <button className="btn ghost-w" onClick={clearCart}>🗑 அழிக்க</button>

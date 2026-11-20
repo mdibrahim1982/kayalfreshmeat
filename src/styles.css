@@ -260,3 +260,8 @@ h2{margin:14px 0 8px}
 /* Stock error in the cart bar: its own full-width single line, so it no longer squeezes the total and buttons */
 .cartbar{flex-wrap:wrap}
 .cartbar .err{flex:0 0 100%;box-sizing:border-box;margin:0 0 2px;padding:5px 10px;font-size:.85rem;line-height:1.3;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.cartbar .err.tap{cursor:pointer;text-decoration:underline}
+.item{scroll-margin-bottom:90px}
+.item.flash{animation:itemflash 1.1s ease-in-out 2}
+@keyframes itemflash{0%,100%{box-shadow:0 8px 20px rgba(20,83,45,.18)}50%{box-shadow:0 0 0 5px var(--red),0 8px 24px rgba(196,22,28,.5)}}
