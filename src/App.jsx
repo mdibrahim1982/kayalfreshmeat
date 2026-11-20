@@ -574,9 +574,15 @@ const sendOrder = async () => {
             ) : (
               <>
                 <div className="amt"><small>செலுத்த வேண்டிய தொகை</small><span>₹{total}</span></div>
-                <div className="pmeth">
-                  <button type="button" className={method === "qr" ? "on" : ""} onClick={() => setMethod("qr")}>📱 QR கோடு மூலம் செலுத்த</button>
-                  <button type="button" className={method === "cod" ? "on" : ""} onClick={() => setMethod("cod")}>💵 கேஷ் ஆன் டெலிவரி</button>
+                <div className="pmeth" role="radiogroup" aria-label="பணம் செலுத்தும் முறை">
+                  <label className={method === "qr" ? "on" : ""}>
+                    <input type="radio" name="paymode" value="qr" checked={method === "qr"} onChange={() => setMethod("qr")} />
+                    <span>📱 QR கோடு மூலம் செலுத்த</span>
+                  </label>
+                  <label className={method === "cod" ? "on" : ""}>
+                    <input type="radio" name="paymode" value="cod" checked={method === "cod"} onChange={() => setMethod("cod")} />
+                    <span>💵 கேஷ் ஆன் டெலிவரி</span>
+                  </label>
                 </div>
                 {method === "qr" ? (
                   <>
