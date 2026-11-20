@@ -575,19 +575,19 @@ const sendOrder = async () => {
               <>
                 <div className="amt"><small>செலுத்த வேண்டிய தொகை</small><span>₹{total}</span></div>
                 <div className="pmeth">
-                  <button type="button" className={method === "qr" ? "on" : ""} onClick={() => setMethod("qr")}>📱 க்யூஆர் கோடு மூலம் செலுத்த</button>
+                  <button type="button" className={method === "qr" ? "on" : ""} onClick={() => setMethod("qr")}>📱 QR கோடு மூலம் செலுத்த</button>
                   <button type="button" className={method === "cod" ? "on" : ""} onClick={() => setMethod("cod")}>💵 கேஷ் ஆன் டெலிவரி</button>
                 </div>
                 {method === "qr" ? (
                   <>
                     <div className="qrbox">
                       <div className="qrapps"><span className="app"><GPayIcon /><b>ஜிபே</b></span><span className="app"><PhonePeIcon /><b>போன்பே</b></span></div>
-                      <img className="qr" src={qrUrl || qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
-                      <a className="btn ghost sm" href={qrUrl || qrImg} download="kayal-fresh-meat-qr.png">⬇ க்யூஆர் படத்தை சேமிக்க</a>
+                      <img className="qr" src={qrUrl || qrImg} alt="பணம் செலுத்த QR கோடு" />
+                      <a className="btn ghost sm" href={qrUrl || qrImg} download="kayal-fresh-meat-qr.png">⬇ QR படத்தை சேமிக்க</a>
                     </div>
                     <div className="pay">
                       <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
-                      <div><span>மொபைல்</span><b>{PAYEE.mobile}</b> <button className="btn ghost sm" onClick={() => copy(PAYEE.mobile)}>{copied ? "✓ நகலெடுத்தது" : "நகலெடு"}</button></div>
+                      <div><span>மொபைல்</span><b>{PAYEE.mobile}</b></div>
                     </div>
                     <label>பணம் செலுத்திய மொபைல் எண் (ஜிபே / போன்பே) – 10 இலக்கம் *</label>
                     <input value={payMobile} onChange={e => setPayMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" maxLength={10} placeholder="எ.கா. 9876543210" />
