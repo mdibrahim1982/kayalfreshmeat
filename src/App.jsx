@@ -436,7 +436,7 @@ const sendOrder = async () => {
           </div>
         </div>
 
-        <div className="grid">
+        <div className="grid" id="products-start">
          {PRODUCTS.map(p => {
   const photo = photoFor(p.id);
   const stock = weeklyAvailability[p.name];
@@ -506,7 +506,7 @@ const sendOrder = async () => {
       </footer>
 
       {showTop && !sheet && (
-        <button className={`totop ${items.length > 0 ? "withcart" : ""}`} aria-label="மேலே செல்ல" title="மேலே செல்ல" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>↑</button>
+        <button className={`totop ${items.length > 0 ? "withcart" : ""}`} aria-label="மேலே செல்ல" title="மேலே செல்ல" onClick={() => document.getElementById("products-start")?.scrollIntoView({ behavior: "smooth", block: "start" })}>↑</button>
       )}
 
       {items.length > 0 && !sheet && (

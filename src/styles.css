@@ -270,3 +270,5 @@ h2{margin:14px 0 8px}
 .totop{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:45;width:46px;height:46px;border-radius:50%;border:3px solid var(--yellow);background:var(--green);color:#fff;font-size:1.5rem;font-weight:800;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35)}
 .totop.withcart{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 .totop:hover{background:var(--green2)}
+
+#products-start{scroll-margin-top:8px}
