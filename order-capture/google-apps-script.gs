@@ -7,8 +7,9 @@
 //   Products - one row per product. Needed headers: a name column (e.g. "Product"), "Weekly Limit",
 //              "Ordered This Week" and optionally "Remaining". The product name must match the name in the app.
 //
-// Every NEW order adds its quantities to "Ordered This Week" (and updates "Remaining").
-// The same order being updated later (pending -> paid / cash on delivery) is NOT counted twice.
+// An order adds its quantities to "Ordered This Week" (and updates "Remaining") only once the customer has
+// chosen a payment mode: paid by QR, or cash on delivery. Orders still "பணம் நிலுவை" (pending) are NOT counted,
+// and an order updated again later is never counted twice.
 
 var ORDERS_SHEET = "Orders";
 var PRODUCTS_SHEET = "Products";
@@ -31,6 +32,8 @@ var ORDER_FIELDS = [
   ["itemDetails", "Item Details", /item\s*details/i]
 ];
 
+function isPending_(status) { return /நிலுவை|pending/i.test(String(status || "")); }
+
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 function norm_(s) { return String(s === null || s === undefined ? "" : s).replace(/\s+/g, " ").trim().toLowerCase(); }
 
@@ -52,7 +55,8 @@ function ordersColumns_(sh) {
   return cols;
 }
 
-// Saves the order. Returns true if it was a NEW order (so its quantities must be counted).
+// Saves the order. Returns true if its quantities must now be counted: the order is no longer pending
+// and had not been counted before (it was new, or its previous status was still pending).
 function saveOrder_(d) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(ORDERS_SHEET) || ss.insertSheet(ORDERS_SHEET);
@@ -66,11 +70,12 @@ function saveOrder_(d) {
     var ids = sh.getRange(2, cols.orderId, sh.getLastRow() - 1, 1).getValues();
     for (var i = 0; i < ids.length; i++) { if (String(ids[i][0]) === String(d.orderId)) { found = i + 2; } }
   }
+  var prevStatus = found && cols.status ? sh.getRange(found, cols.status).getValue() : "";
   var width = sh.getLastColumn();
   var row = found ? sh.getRange(found, 1, 1, width).getValues()[0] : new Array(width).fill("");
   ORDER_FIELDS.forEach(function (f) { if (cols[f[0]]) { row[cols[f[0]] - 1] = values[f[0]]; } });
   if (found) { sh.getRange(found, 1, 1, width).setValues([row]); } else { sh.appendRow(row); }
-  return !found;
+  return !isPending_(d.status) && (!found || isPending_(prevStatus));
 }
 
 // ---------- Products ----------
@@ -114,8 +119,8 @@ function doPost(e) {
   lock.waitLock(20000);
   try {
     var d = JSON.parse(e.postData.contents);
-    var isNew = saveOrder_(d);
-    if (isNew) { addOrdered_(d.itemDetails, 1); }
+    var countNow = saveOrder_(d);
+    if (countNow) { addOrdered_(d.itemDetails, 1); }
     // Optional email alert - remove the // to use:
     // MailApp.sendEmail("your-email@example.com", "Order #" + d.orderId + " - " + d.status, d.name + " " + d.mobile + "\n" + d.items + "\nTotal: " + d.total);
     return json_({ success: true });
@@ -179,7 +184,7 @@ function recountFromOrders() {
   var delivery = rows[rows.length - 1][cols.delivery - 1];
   resetOrderedThisWeek();
   rows.forEach(function (row) {
-    if (row[cols.delivery - 1] !== delivery) { return; }
+    if (row[cols.delivery - 1] !== delivery || isPending_(row[cols.status - 1])) { return; }
     try { addOrdered_(JSON.parse(row[cols.itemDetails - 1] || "[]"), 1); } catch (e) {}
   });
 }
