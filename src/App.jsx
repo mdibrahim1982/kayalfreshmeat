@@ -115,7 +115,7 @@ export default function App() {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify({ cart, f, sheet, step, orderId, payMobile })); } catch (e) {}
   }, [cart, f, sheet, step, orderId, payMobile]);
 
-  const setQ = (id, q) => setCart(c => ({ ...c, [id]: q }));
+  const setQ = (id, q) => { setOrderError(""); setErrorProduct(null); setCart(c => ({ ...c, [id]: q })); };
   const items = LINES.filter(l => cart[l.id] > 0).map(l => ({ ...l, q: cart[l.id], amt: l.q250 && cart[l.id] === 0.25 ? l.q250 : Math.round(l.price * cart[l.id]) }));
   const total = items.reduce((s, i) => s + i.amt, 0);
   const [qrUrl, setQrUrl] = useState("");
@@ -414,10 +414,20 @@ const sendOrder = async () => {
     </div>
   );
 
-  const clearCart = () => { if (window.confirm("தேர்ந்தெடுத்த எல்லா பொருட்களையும் நீக்கவா?")) setCart({}); };
+  const clearCart = () => { if (window.confirm("தேர்ந்தெடுத்த எல்லா பொருட்களையும் நீக்கவா?")) { setCart({}); setOrderError(""); setErrorProduct(null); } };
 
   return (
     <>
+      <nav className="topnav">
+        <a className="brand" href="#top" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          <img src="/favicon.png" alt="" />
+          <span>காயல் ஃப்ரெஷ் மீட்</span>
+        </a>
+        <div className="navicons">
+          <a href={`tel:+91${PHONE}`} aria-label="அழைக்க" title="அழைக்க">📞</a>
+          <a href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer" aria-label="வாட்ஸ்அப்" title="வாட்ஸ்அப்">💬</a>
+        </div>
+      </nav>
       <div className="wrap herowrap"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
       <div className="wrap">
         <div className="banner">
