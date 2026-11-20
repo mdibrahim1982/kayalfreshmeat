@@ -255,7 +255,7 @@ const open = () => {
       quantity > stock.remaining
     ) {
       setOrderError(
-        `ஸ்டாக்கில் உள்ளது ${stock.remaining} மட்டுமே.`
+        `${name}: ஸ்டாக்கில் உள்ளது ${stock.remaining} மட்டுமே.`
       );
       setErrorProduct(parentIdByName[name] || null);
       return;
