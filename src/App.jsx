@@ -340,8 +340,7 @@ const next = async () => {
   setOrderError("");
 
   try {
-    await postOrder("பணம் நிலுவை");
-
+    // The order is saved only when the customer taps ஆர்டர் செய்யவும் (sendOrder)
     setQrUrl(
       await QRCode.toDataURL(
         upiLink(total, orderId),
