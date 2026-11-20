@@ -247,3 +247,12 @@ h2{margin:14px 0 8px}
 .btn.order[disabled]{animation:none;opacity:.55;box-shadow:none;background:#6b7d70;border-color:#d9d9d9;text-shadow:none}
 .ordercta .btn.ghost{width:100%;padding:9px}
 @keyframes orderpulse{0%,100%{transform:scale(1);box-shadow:0 6px 16px rgba(21,128,61,.45)}50%{transform:scale(1.03);box-shadow:0 8px 24px rgba(255,214,10,.85)}}
+
+/* Compact banner on phones */
+@media(max-width:560px){
+.banner{padding:8px 10px;margin:-6px 0 8px;border-width:2px;border-radius:12px}
+.banner .bk{font-size:.82rem;line-height:1.35}
+.banner .when{margin-top:4px;padding:3px 8px;font-size:.8rem}
+.banner .cta{flex-wrap:nowrap;gap:8px;margin-top:6px}
+.banner .cta .btn{flex:1;padding:6px 8px;font-size:.82rem}
+}

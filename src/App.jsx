@@ -232,7 +232,7 @@ const open = () => {
       quantity > stock.remaining
     ) {
       setOrderError(
-        `${name}: இந்த வாரம் மீதமுள்ள அளவு ${stock.remaining}. நீங்கள் தேர்ந்தெடுத்த அளவு ${quantity}. அளவைக் குறைத்து மீண்டும் முயற்சிக்கவும்.`
+        `ஸ்டாக்கில் உள்ளது ${stock.remaining} மட்டுமே.`
       );
       return;
     }
@@ -566,8 +566,8 @@ const sendOrder = async () => {
                   <div className="codnote">💵 டெலிவரியின் போது ₹{total} பணமாக செலுத்தவும்.</div>
                 )}
                 {orderError && <div className="err">{orderError}</div>}
-                <div className="cta">
-                  <button className="btn wa" disabled={loading || (method !== "cod" && (!paid || !payOk))} onClick={sendOrder}>{loading ? <><span className="spin" /> ஏற்றுகிறது…</> : "📲 ஆர்டர் செய்யவும்"}</button>
+                <div className="cta ordercta">
+                  <button className="btn wa order" disabled={loading || (method !== "cod" && (!paid || !payOk))} onClick={sendOrder}>{loading ? <><span className="spin" /> ஏற்றுகிறது…</> : "📲 ஆர்டர் செய்யவும்"}</button>
                   <button className="btn ghost" onClick={() => setStep(1)}>← பின்செல்</button>
                 </div>
               </>
