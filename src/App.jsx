@@ -30,8 +30,8 @@ const PRODUCTS = [
     { id: "brain-s", label: "சிறியது", price: 120 },
     { id: "brain-l", label: "பெரியது", price: 150 } ] },
   { id: "spleen", name: "பல்குத்தி / மண்ணீரல்", kind: "unit", variants: [
-    { id: "spleen-s", label: "சிறியது", price: 120 },
-    { id: "spleen-l", label: "பெரியது", price: 150 } ] },
+    { id: "spleen-s", label: "சிறியது", price: 100
+    { id: "spleen-l", label: "பெரியது", price: 120 } ] },
   { id: "kudal", name: "குடல்", kind: "kg", price: 200, min: 1, step: 1 },
   { id: "kidney", name: "கிட்னி", kind: "kg", price: 480, showPrice: 120, per: "250 கிராம்" },
   { id: "tail", name: "வால்", kind: "unit", variants: [
