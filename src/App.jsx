@@ -44,8 +44,8 @@ const PRODUCTS = [
 ];
 
 const LINES = PRODUCTS.flatMap(p => p.variants
-  ? p.variants.map(v => ({ id: v.id, name: v.label ? `${p.name} – ${v.label}` : p.name, price: v.price, kind: "unit", unit: v.unit || "பீஸ்" }))
-  : [{ id: p.id, name: p.name, price: p.price, kind: p.kind, unit: p.unit || "கிலோ", q250: p.q250, min: p.min, step: p.step }]);
+  ? p.variants.map(v => ({ id: v.id, pid: p.id, name: v.label ? `${p.name} – ${v.label}` : p.name, price: v.price, kind: "unit", unit: v.unit || "பீஸ்" }))
+  : [{ id: p.id, pid: p.id, name: p.name, price: p.price, kind: p.kind, unit: p.unit || "கிலோ", q250: p.q250, min: p.min, step: p.step }]);
 
 const fmtQty = (l, q) => {
   if (l.kind !== "kg") return `${q} ${l.unit}`;
@@ -95,14 +95,14 @@ const loadSaved = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)
 
 export default function App() {
   const saved = useState(loadSaved)[0];
-  const [cart, setCart] = useState(saved.cart || {});
+  const [cart, setCart] = useState({}); // cart is never restored: a refresh starts empty
   const [f, setF] = useState(saved.f || { name: "", mobile: "", alt: "", address: "", landmark: "", area: "காயல்பட்டணம்", notes: "" });
   const [errs, setErrs] = useState({});
-  const [sheet, setSheet] = useState(!!saved.sheet);
-  const [step, setStep] = useState(saved.step || 1);
+  const [sheet, setSheet] = useState(false);
+  const [step, setStep] = useState(1);
   const [paid, setPaid] = useState(false);
-  const [orderId, setOrderId] = useState(saved.orderId || "");
-  const [payMobile, setPayMobile] = useState(saved.payMobile || "");
+  const [orderId, setOrderId] = useState("");
+  const [payMobile, setPayMobile] = useState("");
   const [payMode, setPayMode] = useState(saved.payMode === "cod" ? "cod" : "online"); // "online" (GPay/PhonePe QR) or "cod"
   const fieldRefs = useRef({});
   const [done, setDone] = useState(false);
@@ -114,10 +114,10 @@ export default function App() {
     return () => { clearInterval(t); document.removeEventListener("visibilitychange", tick); };
   }, []);
 
-  // Keep the order safe if the customer switches to GPay / PhonePe and comes back
+  // Remember only the customer's delivery details and payment mode for next time (never the cart)
   useEffect(() => {
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ cart, f, sheet, step, orderId, payMobile, payMode })); } catch (e) {}
-  }, [cart, f, sheet, step, orderId, payMobile, payMode]);
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ f, payMode })); } catch (e) {}
+  }, [f, payMode]);
 
   const setQ = (id, q) => setCart(c => ({ ...c, [id]: q }));
   const items = LINES.filter(l => cart[l.id] > 0).map(l => ({ ...l, q: cart[l.id], amt: l.q250 && cart[l.id] === 0.25 ? l.q250 : Math.round(l.price * cart[l.id]) }));
@@ -341,8 +341,7 @@ const next = async () => {
   setOrderError("");
 
   try {
-    await postOrder("பணம் நிலுவை");
-
+    // No order is saved here: a row is created in the sheet only when the customer presses "ஆர்டர் செய்ய"
     setQrUrl(
       await QRCode.toDataURL(
         upiLink(total, orderId),
@@ -558,10 +557,15 @@ const sendOrder = async () => {
                 <div className="sum">
                   {items.map(i => (
                     <div className="ci" key={i.id}>
-                      <div className="l"><span>{i.name}</span><span>₹{i.amt}</span></div>
-                      <div className="ci-act">
-                        <Qty line={i} q={i.q} set={setQ} />
-                        <button className="del" aria-label="நீக்கு" onClick={() => setQ(i.id, 0)}>🗑 நீக்கு</button>
+                      <div className="ci-row">
+                        <div className="ci-pic">{photoFor(i.pid) ? <img src={photoFor(i.pid)} alt={i.name} /> : <Art id={i.pid} />}</div>
+                        <div className="ci-body">
+                          <div className="l"><span>{i.name}</span><span>₹{i.amt}</span></div>
+                          <div className="ci-act">
+                            <Qty line={i} q={i.q} set={setQ} />
+                            <button className="del" aria-label="நீக்கு" onClick={() => setQ(i.id, 0)}>🗑 நீக்கு</button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}

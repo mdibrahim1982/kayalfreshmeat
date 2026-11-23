@@ -293,3 +293,9 @@ h2{margin:14px 0 8px}
 .ci-act .del{border:1.5px solid var(--red);background:#fff;color:var(--red);border-radius:999px;padding:6px 12px;font:700 .8rem inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
 .ci-act .del:hover{background:var(--red);color:#fff}
 .panel .pmeth label span{flex:1}
+
+/* Product photo in the checkout popup list */
+.ci-row{display:flex;align-items:center;gap:10px}
+.ci-pic{width:68px;height:68px;flex:none;border-radius:12px;overflow:hidden;border:2px solid #ecd9a8;background:#fff}
+.ci-pic img,.ci-pic svg{display:block;width:100%;height:100%;object-fit:cover}
+.ci-body{flex:1;min-width:0}
