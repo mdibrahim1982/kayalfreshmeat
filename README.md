@@ -31,3 +31,10 @@ taps "அடுத்து: பணம் செலுத்த" (status: பண
 2. Deploy > New deployment > Web app (Execute as: Me, Access: Anyone) and copy the URL.
 3. Put the URL in `.env` as `VITE_ORDER_ENDPOINT=...`, then rebuild.
 Every order then appears as a new row in the sheet (and can email you if you enable the MailApp line).
+
+## Website analytics
+Counts page views and unique visitors in a `Website Analytics` sheet (created automatically in the same Google Sheet).
+- Every page load / refresh / reopen = 1 page view. The Visitor ID is saved in the browser (`localStorage`); the same ID is counted once per calendar day (India time) and once overall.
+- **Setup:** paste the updated `order-capture/google-apps-script.gs`, then Project Settings > Script properties > add `ANALYTICS_ADMIN_KEY` (a long secret of your choice), then Deploy > Manage deployments > Edit > New version > Deploy.
+- **Dashboard:** open `https://<your-site>/#admin` and enter the admin key. Shows today's / total page views and unique visitors.
+- Sheet layout: A:D daily summary (Date, Page Views, Unique Visitors, New Visitors); F:K one row per Visitor ID.
