@@ -126,6 +126,23 @@ export default function App() {
   const deliveryCharge = subtotal > 0 && (singleQuarterKg || subtotal <= SMALL_ORDER_LIMIT) ? DELIVERY_CHARGE : 0;
   const total = subtotal + deliveryCharge; // payable amount (QR, WhatsApp message and Orders sheet all use this)
   useEffect(() => { if (sheet && items.length === 0) setSheet(false); }, [sheet, items.length]);
+
+  // Floating arrow (bottom right): appears once the first product has scrolled out of view
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      const first = document.querySelector("#products .item");
+      setShowTop(!!first && first.getBoundingClientRect().top < -40);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
+  }, [done]);
+  const goFirstProduct = () => {
+    const first = document.querySelector("#products .item");
+    if (first) first.scrollIntoView({ behavior: "smooth", block: "start" }); // html scroll-padding-top clears the sticky Shop nav
+  };
   const [qrUrl, setQrUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderError, setOrderError] = useState("");
@@ -532,6 +549,10 @@ const sendOrder = async () => {
           📞 <a href={`tel:+91${PHONE}`}>{PHONE_SHOW}</a> · <a href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer">வாட்ஸ்அப்</a>
         </div>
       </footer>
+
+      {showTop && !sheet && (
+        <button className={`totop ${items.length > 0 ? "withcart" : ""}`} onClick={goFirstProduct} aria-label="முதல் பொருளுக்குச் செல்ல" title="முதல் பொருளுக்குச் செல்ல">↑</button>
+      )}
 
       {items.length > 0 && !sheet && (
         <div className="cartbar">
