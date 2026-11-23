@@ -446,6 +446,12 @@ const sendOrder = async () => {
 
   return (
     <>
+       <nav className="shop-nav">
+        <a href="#products" aria-label="Go to products">
+          <span>🛍️</span> Shop
+        </a>
+      </nav>
+
       <div className="wrap herowrap"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
       <div className="wrap">
         <div className="banner">
@@ -457,7 +463,7 @@ const sendOrder = async () => {
           </div>
         </div>
 
-        <div className="grid">
+       <div className="grid" id="products">
          {PRODUCTS.map(p => {
   const photo = photoFor(p.id);
   const stock = weeklyAvailability[p.name];
