@@ -545,7 +545,7 @@ const sendOrder = async () => {
       </footer>
 
       {showTop && !sheet && (
-        <button className={`totop ${items.length > 0 ? "withcart" : ""}`} onClick={goFirstProduct} aria-label="முதல் பொருளுக்குச் செல்ல" title="முதல் பொருளுக்குச் செல்ல">↑</button>
+        <button className={`totop ${items.length > 0 ? "withcart" : ""}`} onClick={goFirstProduct} aria-label="முதல் பொருளுக்குச் செல்ல" title="முதல் பொருளுக்குச் செல்ல">🛍️</button>
       )}
 
       {items.length > 0 && !sheet && (
