@@ -12,6 +12,8 @@ const photoFor = id => Object.entries(photos).find(([p]) => p.split("/").pop().s
 
 // Optional: Google Apps Script URL that silently saves every order (see README)
 const ORDER_ENDPOINT = import.meta.env.VITE_ORDER_ENDPOINT;
+// Delivery charge: ₹15 when the order is a single 250 gm item, or when the order value is ₹125 or less
+const DELIVERY_CHARGE = 15, SMALL_ORDER_LIMIT = 125;
 const PHONE = "7601915355", WA = "917601915355";
 const PHONE_SHOW = "7601 915355";
 const PAYEE = { name: "FATHIMA FARZANA S.J", mobile: "9444492854" };
@@ -116,7 +118,10 @@ export default function App() {
 
   const setQ = (id, q) => setCart(c => ({ ...c, [id]: q }));
   const items = LINES.filter(l => cart[l.id] > 0).map(l => ({ ...l, q: cart[l.id], amt: l.q250 && cart[l.id] === 0.25 ? l.q250 : Math.round(l.price * cart[l.id]) }));
-  const total = items.reduce((s, i) => s + i.amt, 0);
+  const subtotal = items.reduce((s, i) => s + i.amt, 0);
+  const singleQuarterKg = items.length === 1 && items[0].kind === "kg" && items[0].q === 0.25;
+  const deliveryCharge = subtotal > 0 && (singleQuarterKg || subtotal <= SMALL_ORDER_LIMIT) ? DELIVERY_CHARGE : 0;
+  const total = subtotal + deliveryCharge; // payable amount (QR, WhatsApp message and Orders sheet all use this)
   const [qrUrl, setQrUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderError, setOrderError] = useState("");
@@ -273,10 +278,12 @@ const postOrder = async (status) => {
       landmark: f.landmark,
       notes: f.notes,
       total,
+      deliveryCharge,
 
-      items: items.map(i =>
-        `${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`
-      ).join("\n"),
+      items: [
+        ...items.map(i => `${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`),
+        ...(deliveryCharge ? [`டெலிவரி கட்டணம்: ₹${deliveryCharge}`] : []),
+      ].join("\n"),
 
       itemDetails: items.map(i => {
         const parent = PRODUCTS.find(p =>
@@ -339,6 +346,7 @@ const next = async () => {
     `டெலிவரி: ${sunStr} (காலை 9.30 – 11.30)`, "",
     "*பொருட்கள்*",
     ...items.map(i => `• ${i.name}: ${fmtQty(i, i.q)} – ₹${i.amt}`),
+    deliveryCharge ? `• டெலிவரி கட்டணம்: ₹${deliveryCharge}` : false,
     `*மொத்தம்: ₹${total}*`, "",
     "*வாடிக்கையாளர் விவரம்*",
     `பெயர்: ${f.name}`, `மொபைல்: ${f.mobile}`,
@@ -466,6 +474,7 @@ const sendOrder = async () => {
   );
 })}
         </div>
+        <div className="disc">🛵 <b>டெலிவரி கட்டணம்:</b> ₹125 அல்லது அதற்கு குறைவான ஆர்டர், அல்லது 250 கிராம் மட்டும் ஆர்டர் செய்தால் ₹15 டெலிவரி கட்டணம் சேர்க்கப்படும்.</div>
         <div className="disc">📷 <b>குறிப்பு:</b> பொருட்களின் படங்கள் குறிப்புக்காக மட்டுமே. அவை உண்மையான பொருட்கள் அல்ல.</div>
       </div>
 
@@ -482,7 +491,7 @@ const sendOrder = async () => {
       {items.length > 0 && !sheet && (
         <div className="cartbar">
           {orderError && <div className="err">{orderError}</div>}
-          <div><b>{items.length} பொருட்கள்</b><br /><span>மொத்தம் ₹{total}</span></div>
+          <div><b>{items.length} பொருட்கள்</b><br /><span>மொத்தம் ₹{total}</span>{deliveryCharge > 0 && <small> (டெலிவரி ₹{deliveryCharge} உட்பட)</small>}</div>
           <div className="cb-btns">
             <button className="btn ghost-w" onClick={clearCart}>🗑 அழிக்க</button>
             <button className="btn yel" onClick={open}>ஆர்டர் செய்ய →</button>
@@ -510,6 +519,7 @@ const sendOrder = async () => {
                   {items.map(i => (
                     <div className="l" key={i.id}><span>{i.name} × {fmtQty(i, i.q)}</span><span>₹{i.amt}</span></div>
                   ))}
+                  {deliveryCharge > 0 && <div className="l"><span>டெலிவரி கட்டணம்</span><span>₹{deliveryCharge}</span></div>}
                   <div className="l t"><span>மொத்தம்</span><span>₹{total}</span></div>
                 </div>
                 <label>பெயர் *</label>
@@ -539,7 +549,7 @@ const sendOrder = async () => {
               </>
             ) : (
               <>
-                <div className="amt"><small>செலுத்த வேண்டிய தொகை</small><span>₹{total}</span></div>
+                <div className="amt"><small>செலுத்த வேண்டிய தொகை{deliveryCharge > 0 ? ` (டெலிவரி ₹${deliveryCharge} உட்பட)` : ""}</small><span>₹{total}</span></div>
                 <div className="qrbox">
                   <div className="qrapps"><span className="app"><GPayIcon /><b>ஜிபே</b></span><span className="app"><PhonePeIcon /><b>போன்பே</b></span></div>
                   <img className="qr" src={qrUrl || qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />

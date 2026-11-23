@@ -277,3 +277,5 @@ h2{margin:14px 0 8px}
 .pmeth label{display:flex;align-items:center;gap:8px;margin:0;padding:12px 10px;border:2px solid #d9d9d9;background:#fff;border-radius:12px;font-weight:700;font-size:.9rem;color:var(--ink);cursor:pointer}
 .pmeth label.on{border-color:#128c3e;background:#e8f7ee;color:#0b6b2e}
 .pmeth input[type=radio]{width:20px;height:20px;padding:0;margin:0;flex:none;accent-color:#128c3e;cursor:pointer}
+
+.cartbar small{color:#fff;opacity:.85;font-size:.72rem;font-weight:400}
