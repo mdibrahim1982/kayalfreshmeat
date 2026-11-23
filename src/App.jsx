@@ -141,7 +141,7 @@ export default function App() {
   }, [done]);
   const goFirstProduct = () => {
     const first = document.querySelector("#products .item");
-    if (first) first.scrollIntoView({ behavior: "smooth", block: "start" }); // html scroll-padding-top clears the sticky Shop nav
+    if (first) first.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const [qrUrl, setQrUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -463,12 +463,6 @@ const sendOrder = async () => {
 
   return (
     <>
-       <nav className="shop-nav">
-        <a href="#products" aria-label="Go to products">
-          <span>🛍️</span> Shop
-        </a>
-      </nav>
-
       <div className="wrap herowrap"><div className="herobox"><img src={bannerImg} alt="காயல் ஃப்ரெஷ் மீட் – ஆட்டு இறைச்சி போன்ற பதத்தில்" /></div></div>
       <div className="wrap">
         <div className="banner">
