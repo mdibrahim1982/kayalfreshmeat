@@ -32,7 +32,7 @@ const PRODUCTS = [
   { id: "spleen", name: "பல்குத்தி / மண்ணீரல்", kind: "unit", variants: [
     { id: "spleen-s", label: "சிறியது", price: 100 },
     { id: "spleen-l", label: "பெரியது", price: 120 } ] },
-  { id: "kudal", name: "குடல்", kind: "kg", price: 200, min: 0.25, step: 0.25 },
+  { id: "kudal", name: "குடல்", kind: "kg", price: 200, min: 0.5, step: 0.25 },
   { id: "kidney", name: "கிட்னி", kind: "kg", price: 480, showPrice: 120, per: "250 கிராம்" },
   { id: "tail", name: "வால்", kind: "unit", variants: [
     { id: "tail-s", label: "சிறியது", price: 200 },
