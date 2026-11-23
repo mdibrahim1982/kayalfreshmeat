@@ -22,6 +22,8 @@ const UPI_ID = "fathma.ibrahm-1@okicici", UPI_AID = "uGICAgIDNwczzAQ";
 const upiLink = (amount, orderId) =>
   `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent("Fathima Farzana s.j")}&aid=${UPI_AID}&am=${Number(amount).toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order " + orderId)}`;
 const SHOP = "காயல் ஃப்ரெஷ் மீட்";
+const COD_STATUS = "கேஷ் ஆன் டெலிவரி"; // not "pending", so stock is counted for COD orders
+const FIELD_ORDER = ["name", "mobile", "address", "area", "landmark"];
 
 const PRODUCTS = [
   { id: "beef", name: "பீஃப்", kind: "kg", price: 450, q250: 115 },
@@ -101,8 +103,9 @@ export default function App() {
   const [paid, setPaid] = useState(false);
   const [orderId, setOrderId] = useState(saved.orderId || "");
   const [payMobile, setPayMobile] = useState(saved.payMobile || "");
+  const [payMode, setPayMode] = useState(saved.payMode === "cod" ? "cod" : "online"); // "online" (GPay/PhonePe QR) or "cod"
+  const fieldRefs = useRef({});
   const [done, setDone] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const tick = () => setNow(new Date());
@@ -113,8 +116,8 @@ export default function App() {
 
   // Keep the order safe if the customer switches to GPay / PhonePe and comes back
   useEffect(() => {
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ cart, f, sheet, step, orderId, payMobile })); } catch (e) {}
-  }, [cart, f, sheet, step, orderId, payMobile]);
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ cart, f, sheet, step, orderId, payMobile, payMode })); } catch (e) {}
+  }, [cart, f, sheet, step, orderId, payMobile, payMode]);
 
   const setQ = (id, q) => setCart(c => ({ ...c, [id]: q }));
   const items = LINES.filter(l => cart[l.id] > 0).map(l => ({ ...l, q: cart[l.id], amt: l.q250 && cart[l.id] === 0.25 ? l.q250 : Math.round(l.price * cart[l.id]) }));
@@ -122,6 +125,7 @@ export default function App() {
   const singleQuarterKg = items.length === 1 && items[0].kind === "kg" && items[0].q === 0.25;
   const deliveryCharge = subtotal > 0 && (singleQuarterKg || subtotal <= SMALL_ORDER_LIMIT) ? DELIVERY_CHARGE : 0;
   const total = subtotal + deliveryCharge; // payable amount (QR, WhatsApp message and Orders sheet all use this)
+  useEffect(() => { if (sheet && items.length === 0) setSheet(false); }, [sheet, items.length]);
   const [qrUrl, setQrUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderError, setOrderError] = useState("");
@@ -198,7 +202,12 @@ useEffect(() => {
     return () => { live = false; };
   }, [sheet, step, total, orderId]);
   const sunStr = nextSunday(now).toLocaleDateString("ta-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const up = k => e => setF({ ...f, [k]: e.target.value });
+  const up = k => e => {
+    setF({ ...f, [k]: e.target.value });
+    if (errs[k]) setErrs(x => { const n = { ...x }; delete n[k]; return n; });
+  };
+  // Props that mark an input as invalid (red highlight) and let validate() scroll to it
+  const fld = k => ({ ref: el => { fieldRefs.current[k] = el; }, className: errs[k] ? "invalid" : "", "aria-invalid": !!errs[k] });
 
   const validate = () => {
     const e = {};
@@ -208,12 +217,15 @@ useEffect(() => {
     if (!f.area.trim()) e.area = "பகுதி / இடம் அவசியம்.";
     if (!f.landmark.trim()) e.landmark = "அடையாளம் அல்லது கூகுள் மேப் இணைப்பு அவசியம்.";
     setErrs(e);
+    const first = FIELD_ORDER.find(k => e[k]);
+    if (first) setTimeout(() => {
+      const el = fieldRefs.current[first];
+      if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); el.focus({ preventScroll: true }); }
+    }, 0);
     return !Object.keys(e).length;
   };
   
-const open = () => {
-  setOrderError("");
-
+const stockError = () => {
   const requested = {};
 
   items.forEach(i => {
@@ -235,12 +247,16 @@ const open = () => {
       stock.limit !== null &&
       quantity > stock.remaining
     ) {
-      setOrderError(
-        `${name}: இந்த வாரம் மீதமுள்ள அளவு ${stock.remaining}. நீங்கள் தேர்ந்தெடுத்த அளவு ${quantity}. அளவைக் குறைத்து மீண்டும் முயற்சிக்கவும்.`
-      );
-      return;
+      return `${name}: இந்த வாரம் மீதமுள்ள அளவு ${stock.remaining}. நீங்கள் தேர்ந்தெடுத்த அளவு ${quantity}. அளவைக் குறைத்து மீண்டும் முயற்சிக்கவும்.`;
     }
   }
+  return "";
+};
+
+const open = () => {
+  const err = stockError();
+  setOrderError(err);
+  if (err) return;
 
   setStep(1);
   setPaid(false);
@@ -267,7 +283,8 @@ const postOrder = async (status) => {
     body: JSON.stringify({
       orderId,
       status,
-      payMobile,
+      payMobile: payMode === "cod" ? "" : payMobile,
+      payMode,
       time: new Date().toISOString(),
       delivery: sunStr,
       name: f.name,
@@ -317,6 +334,9 @@ const postOrder = async (status) => {
 const next = async () => {
   if (loading || !validate()) return;
 
+  const stockErr = stockError();
+  if (stockErr) { setOrderError(stockErr); return; }
+
   setLoading(true);
   setOrderError("");
 
@@ -355,9 +375,9 @@ const next = async () => {
     `அடையாளம்: ${f.landmark}`,
     `பகுதி: ${f.area}`,
     f.notes ? `குறிப்பு: ${f.notes}` : false, "",
-    `*பணம் செலுத்தப்பட்டது* ✅ (ஜிபே / போன்பே)`,
-    `தொகை: ₹${total}`,
-    `பணம் செலுத்திய மொபைல் எண்: ${payMobile}`
+    ...(payMode === "cod"
+      ? [`*பணம் செலுத்தும் முறை: கேஷ் ஆன் டெலிவரி* 💵`, `டெலிவரியின் போது செலுத்த வேண்டிய தொகை: ₹${total}`]
+      : [`*பணம் செலுத்தப்பட்டது* ✅ (ஜிபே / போன்பே)`, `தொகை: ₹${total}`, `பணம் செலுத்திய மொபைல் எண்: ${payMobile}`])
   ].filter(x => x !== false).join("\n");
 
   const payOk = /^[6-9]\d{9}$/.test(payMobile.trim());
@@ -388,13 +408,33 @@ const sendOrder = async () => {
   }
 };
 
-  const copy = t => { try { navigator.clipboard.writeText(t); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
+  // Cash on delivery: no payment step - save the order and open WhatsApp straight away
+  const placeCod = async () => {
+    if (loading || !validate()) return;
+    const stockErr = stockError();
+    if (stockErr) { setOrderError(stockErr); return; }
+
+    setLoading(true);
+    setOrderError("");
+    try {
+      await postOrder(COD_STATUS);
+      window.open(`https://wa.me/${WA}?text=${encodeURIComponent(msg())}`, "_blank");
+      setSheet(false);
+      setDone(true);
+      window.scrollTo({ top: 0 });
+    } catch (e) {
+      console.error("COD order failed:", e);
+      setOrderError(e.message || "ஆர்டரைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (done) return (
     <div className="wrap" style={{ textAlign: "center", paddingTop: 60 }}>
       <div style={{ fontSize: 56 }}>✅</div>
       <h2>நன்றி, {f.name}!</h2>
-      <p>உங்கள் முன்பதிவு வாட்ஸ்அப்பில் தயாராக உள்ளது. செய்தியை அனுப்பி, பணம் செலுத்திய ஸ்கிரீன்ஷாட்டையும் பகிர்ந்து உறுதிசெய்யவும்.</p>
+      <p>உங்கள் முன்பதிவு வாட்ஸ்அப்பில் தயாராக உள்ளது. {payMode === "cod" ? "செய்தியை அனுப்பி ஆர்டரை உறுதிசெய்யவும்." : "செய்தியை அனுப்பி, பணம் செலுத்திய ஸ்கிரீன்ஷாட்டையும் பகிர்ந்து உறுதிசெய்யவும்."}</p>
       <p><b>டெலிவரி:</b> {sunStr}, காலை 9.30 – 11.30</p>
       <div className="cta" style={{ justifyContent: "center" }}>
         <button className="btn" onClick={() => { setDone(false); setCart({}); }}>புதிய ஆர்டர்</button>
@@ -474,7 +514,7 @@ const sendOrder = async () => {
   );
 })}
         </div>
-        <div className="disc">🛵 <b>டெலிவரி கட்டணம்:</b> ₹125 அல்லது அதற்கு குறைவான ஆர்டர், அல்லது 250 கிராம் மட்டும் ஆர்டர் செய்தால் ₹15 டெலிவரி கட்டணம் சேர்க்கப்படும்.</div>
+        <div className="disc">🛵 <b>டெலிவரி கட்டணம்:</b> ₹125 அல்லது அதற்கு குறைவான ஆர்டர் மதிப்பிற்கு, ₹15 டெலிவரி சார்ஜ் சேர்க்கப்படும்.</div>
         <div className="disc">📷 <b>குறிப்பு:</b> பொருட்களின் படங்கள் குறிப்புக்காக மட்டுமே. அவை உண்மையான பொருட்கள் அல்ல.</div>
       </div>
 
@@ -504,7 +544,7 @@ const sendOrder = async () => {
           <div className="panel" ref={panelRef} onClick={e => e.stopPropagation()}>
             {loading && (
               <div className="loadov" role="status" aria-live="polite">
-                <div className="loadcard"><span className="spin lg" /><p>பணம் செலுத்தும் பக்கம் தயாராகிறது…<br />சற்று காத்திருக்கவும்</p></div>
+                <div className="loadcard"><span className="spin lg" /><p>{payMode === "cod" ? "ஆர்டர் சேமிக்கப்படுகிறது…" : "பணம் செலுத்தும் பக்கம் தயாராகிறது…"}<br />சற்று காத்திருக்கவும்</p></div>
               </div>
             )}
             <div className="phead">
@@ -517,25 +557,31 @@ const sendOrder = async () => {
               <>
                 <div className="sum">
                   {items.map(i => (
-                    <div className="l" key={i.id}><span>{i.name} × {fmtQty(i, i.q)}</span><span>₹{i.amt}</span></div>
+                    <div className="ci" key={i.id}>
+                      <div className="l"><span>{i.name}</span><span>₹{i.amt}</span></div>
+                      <div className="ci-act">
+                        <Qty line={i} q={i.q} set={setQ} />
+                        <button className="del" aria-label="நீக்கு" onClick={() => setQ(i.id, 0)}>🗑 நீக்கு</button>
+                      </div>
+                    </div>
                   ))}
                   {deliveryCharge > 0 && <div className="l"><span>டெலிவரி கட்டணம்</span><span>₹{deliveryCharge}</span></div>}
                   <div className="l t"><span>மொத்தம்</span><span>₹{total}</span></div>
                 </div>
                 <label>பெயர் *</label>
-                <input value={f.name} onChange={up("name")} placeholder="உங்கள் பெயர்" autoComplete="name" />
+                <input {...fld("name")} value={f.name} onChange={up("name")} placeholder="உங்கள் பெயர்" autoComplete="name" />
                 {errs.name && <div className="err">{errs.name}</div>}
                 <label>மொபைல் (வாட்ஸ்அப்) *</label>
-                <input value={f.mobile} onChange={up("mobile")} inputMode="numeric" maxLength={10} placeholder="10 இலக்க எண்" autoComplete="tel" />
+                <input {...fld("mobile")} value={f.mobile} onChange={up("mobile")} inputMode="numeric" maxLength={10} placeholder="10 இலக்க எண்" autoComplete="tel" />
                 {errs.mobile && <div className="err">{errs.mobile}</div>}
                 <label>வீட்டு எண் / தெரு *</label>
-                <input value={f.address} onChange={up("address")} placeholder="வீட்டு எண், தெருவின் பெயர்" />
+                <input {...fld("address")} value={f.address} onChange={up("address")} placeholder="வீட்டு எண், தெருவின் பெயர்" />
                 {errs.address && <div className="err">{errs.address}</div>}
                 <label>பகுதி / இடம் *</label>
-                <input value={f.area} onChange={up("area")} placeholder="பகுதி / இடம்" />
+                <input {...fld("area")} value={f.area} onChange={up("area")} placeholder="பகுதி / இடம்" />
                 {errs.area && <div className="err">{errs.area}</div>}
                 <label>அடையாளம் / கூகுள் மேப் இணைப்பு *</label>
-                <input value={f.landmark} onChange={up("landmark")} placeholder="பள்ளிவாசல், கடை அருகில் அல்லது கூகுள் மேப் இணைப்பு" />
+                <input {...fld("landmark")} value={f.landmark} onChange={up("landmark")} placeholder="பள்ளிவாசல், கடை அருகில் அல்லது கூகுள் மேப் இணைப்பு" />
                 {errs.landmark && <div className="err">{errs.landmark}</div>}
                 {orderError && <div className="err">{orderError}</div>}
                 <details>
@@ -545,27 +591,38 @@ const sendOrder = async () => {
                   <label>சிறப்பு குறிப்புகள்</label>
                   <input value={f.notes} onChange={up("notes")} placeholder="பீஸ் அளவு, சுத்தம் போன்றவை" />
                 </details>
-                <button className="btn big" disabled={loading} onClick={next}>{loading ? <><span className="spin" /> ஏற்றுகிறது…</> : "அடுத்து: பணம் செலுத்த →"}</button>
+                <label>பணம் செலுத்தும் முறை *</label>
+                <div className="pmeth" role="radiogroup" aria-label="பணம் செலுத்தும் முறை">
+                  <label className={payMode === "online" ? "on" : ""}>
+                    <input type="radio" name="paymode" value="online" checked={payMode === "online"} onChange={() => setPayMode("online")} />
+                    <span>📲 ஜிபே / போன்பே</span>
+                  </label>
+                  <label className={payMode === "cod" ? "on" : ""}>
+                    <input type="radio" name="paymode" value="cod" checked={payMode === "cod"} onChange={() => setPayMode("cod")} />
+                    <span>💵 கேஷ் ஆன் டெலிவரி</span>
+                  </label>
+                </div>
+                {payMode === "cod" && <div className="codnote">டெலிவரியின் போது ₹{total} பணமாகக் கொடுக்கவும்.</div>}
+                <button className="btn big" disabled={loading} onClick={payMode === "cod" ? placeCod : next}>{loading ? <><span className="spin" /> ஏற்றுகிறது…</> : payMode === "cod" ? "ஆர்டர் செய்ய" : "அடுத்து: பணம் செலுத்த →"}</button>
               </>
             ) : (
               <>
-                <div className="amt"><small>செலுத்த வேண்டிய தொகை{deliveryCharge > 0 ? ` (டெலிவரி ₹${deliveryCharge} உட்பட)` : ""}</small><span>₹{total}</span></div>
+                <div className="amt" style={{ justifyContent: "center" }}><span>₹{total}</span></div>
                 <div className="qrbox">
                   <div className="qrapps"><span className="app"><GPayIcon /><b>ஜிபே</b></span><span className="app"><PhonePeIcon /><b>போன்பே</b></span></div>
                   <img className="qr" src={qrUrl || qrImg} alt="பணம் செலுத்த க்யூஆர் கோடு" />
-                  <a className="btn ghost sm" href={qrUrl || qrImg} download="kayal-fresh-meat-qr.png">⬇ க்யூஆர் படத்தை சேமிக்க</a>
                 </div>
                 <div className="pay">
                   <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
-                  <div><span>மொபைல்</span><b>{PAYEE.mobile}</b> <button className="btn ghost sm" onClick={() => copy(PAYEE.mobile)}>{copied ? "✓ நகலெடுத்தது" : "நகலெடு"}</button></div>
+                  <div><span>மொபைல்</span><b>{PAYEE.mobile}</b></div>
                 </div>
                 <label>பணம் செலுத்திய மொபைல் எண் (ஜிபே / போன்பே) – 10 இலக்கம் *</label>
-                <input value={payMobile} onChange={e => setPayMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" maxLength={10} placeholder="எ.கா. 9876543210" />
+                <input className={payMobile && !payOk ? "invalid" : ""} value={payMobile} onChange={e => setPayMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" maxLength={10} placeholder="எ.கா. 9876543210" />
                 {payMobile && !payOk && <div className="err">சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.</div>}
                 {orderError && <div className="err">{orderError}</div>}
                 <label className="chk"><input type="checkbox" checked={paid} onChange={e => setPaid(e.target.checked)} /><span>₹{total} பணம் செலுத்திவிட்டேன்.</span></label>
                 <div className="cta">
-                  <button className="btn wa" disabled={!paid || !payOk} onClick={sendOrder}>📲 வாட்ஸ்அப்பில் ஆர்டரை அனுப்ப</button>
+                  <button className="btn wa" disabled={!paid || !payOk} onClick={sendOrder}>📲 ஆர்டர் செய்ய</button>
                   <button className="btn ghost" onClick={() => setStep(1)}>← பின்செல்</button>
                 </div>
               </>

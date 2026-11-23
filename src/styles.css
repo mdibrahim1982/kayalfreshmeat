@@ -279,3 +279,17 @@ h2{margin:14px 0 8px}
 .pmeth input[type=radio]{width:20px;height:20px;padding:0;margin:0;flex:none;accent-color:#128c3e;cursor:pointer}
 
 .cartbar small{color:#fff;opacity:.85;font-size:.72rem;font-weight:400}
+
+/* Validation: highlight the field that failed */
+.panel input.invalid, .panel input.invalid:focus{border-color:var(--red);background:#fff1f0;box-shadow:0 0 0 3px rgba(196,22,28,.2)}
+.panel input.invalid{animation:shakex .3s ease-in-out}
+@keyframes shakex{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.panel .err::before{content:"⚠ "}
+
+/* Editable cart inside the popup */
+.panel .sum .ci{padding:6px 0;border-bottom:1px dashed #ecd9a8}
+.panel .sum .ci:last-of-type{border-bottom:0}
+.ci-act{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px}
+.ci-act .del{border:1.5px solid var(--red);background:#fff;color:var(--red);border-radius:999px;padding:6px 12px;font:700 .8rem inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.ci-act .del:hover{background:var(--red);color:#fff}
+.panel .pmeth label span{flex:1}
