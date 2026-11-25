@@ -19,8 +19,9 @@ const PHONE_SHOW = "7601 915355";
 const PAYEE = { name: "FATHIMA FARZANA S.J", mobile: "9444492854" };
 // Dynamic UPI QR: same payee as the old static QR, but the order amount is filled in automatically
 const UPI_ID = "fathma.ibrahm-1@okicici", UPI_AID = "uGICAgIDNwczzAQ";
+// tn = the "Add note" text shown in GPay / PhonePe / Paytm when the QR is scanned (max 50 chars)
 const upiLink = (amount, orderId) =>
-  `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent("Fathima Farzana s.j")}&aid=${UPI_AID}&am=${Number(amount).toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order " + orderId)}`;
+  `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent("Fathima Farzana s.j")}&aid=${UPI_AID}&am=${Number(amount).toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order ID " + orderId)}`;
 const SHOP = "காயல் ஃப்ரெஷ் மீட்";
 const COD_STATUS = "கேஷ் ஆன் டெலிவரி"; // not "pending", so stock is counted for COD orders
 const FIELD_ORDER = ["name", "mobile", "address", "area", "landmark"];
