@@ -312,6 +312,8 @@ html {
 .totop{font-size:1.5rem;display:flex;align-items:center;justify-content:center;padding:0}
 
 /* "Wait, your order is being confirmed" - covers the whole page until WhatsApp opens */
-.confirmov{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:20px;background:rgba(255,255,255,.88);backdrop-filter:blur(3px)}
-.confirmov .loadcard{max-width:320px}
-.confirmov .loadcard small{display:block;margin-top:8px;font-weight:600;font-size:.8rem;color:#555}
+.confirmov{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100vh;height:100dvh;z-index:300;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:max(20px,env(safe-area-inset-top,0px)) 20px max(20px,env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);overflow:hidden}
+.confirmov .loadcard{box-sizing:border-box;width:100%;max-width:320px;margin:0 auto;padding:22px 20px;overflow-wrap:anywhere;word-break:normal;display:flex;flex-direction:column;align-items:center;text-align:center}
+.confirmov .loadcard .spin.lg{display:block;flex:none;margin:0 auto 12px}
+.confirmov .loadcard p{width:100%;line-height:1.7}
+.confirmov .loadcard small{display:block;margin-top:8px;font-weight:600;font-size:.8rem;line-height:1.7;color:#555}
