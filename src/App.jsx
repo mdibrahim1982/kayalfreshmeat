@@ -19,9 +19,10 @@ const PHONE_SHOW = "7601 915355";
 const PAYEE = { name: "FATHIMA FARZANA S.J", mobile: "9444492854" };
 // Dynamic UPI QR: same payee as the old static QR, but the order amount is filled in automatically
 const UPI_ID = "fathma.ibrahm-1@okicici", UPI_AID = "uGICAgIDNwczzAQ";
-// tn = the "Add note" text shown in GPay / PhonePe / Paytm when the QR is scanned (max 50 chars)
+// tn = payer-side "note", tr = transaction reference (shows in the receiver's GPay Business / bank record).
+// If any UPI app ever declines the payment, delete the `&tr=${orderId}` part.
 const upiLink = (amount, orderId) =>
-  `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent("Fathima Farzana s.j")}&aid=${UPI_AID}&am=${Number(amount).toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order ID " + orderId)}`;
+  `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent("Fathima Farzana s.j")}&aid=${UPI_AID}&am=${Number(amount).toFixed(2)}&cu=INR&tr=${orderId}&tn=${encodeURIComponent("Order ID " + orderId)}`;
 const SHOP = "காயல் ஃப்ரெஷ் மீட்";
 const COD_STATUS = "கேஷ் ஆன் டெலிவரி"; // not "pending", so stock is counted for COD orders
 const FIELD_ORDER = ["name", "mobile", "address", "area", "landmark"];
@@ -641,6 +642,7 @@ const sendOrder = async () => {
                 <div className="pay">
                   <div><span>பெயர்</span><b>{PAYEE.name}</b></div>
                   <div><span>மொபைல்</span><b>{PAYEE.mobile}</b></div>
+                  <div><span>ஆர்டர் எண்</span><b>#{orderId}</b></div>
                 </div>
                 <label>பணம் செலுத்திய மொபைல் எண் (ஜிபே / போன்பே) – 10 இலக்கம் *</label>
                 <input className={payMobile && !payOk ? "invalid" : ""} value={payMobile} onChange={e => setPayMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" maxLength={10} placeholder="எ.கா. 9876543210" />
