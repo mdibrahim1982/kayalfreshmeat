@@ -310,3 +310,8 @@ html {
 }
 
 .totop{font-size:1.5rem;display:flex;align-items:center;justify-content:center;padding:0}
+
+/* "Wait, your order is being confirmed" - covers the whole page until WhatsApp opens */
+.confirmov{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:20px;background:rgba(255,255,255,.88);backdrop-filter:blur(3px)}
+.confirmov .loadcard{max-width:320px}
+.confirmov .loadcard small{display:block;margin-top:8px;font-weight:600;font-size:.8rem;color:#555}

@@ -108,6 +108,8 @@ export default function App() {
   const [payMode, setPayMode] = useState(saved.payMode === "cod" ? "cod" : "online"); // "online" (GPay/PhonePe QR) or "cod"
   const fieldRefs = useRef({});
   const [done, setDone] = useState(false);
+  const [confirming, setConfirming] = useState(false); // "order is being confirmed" overlay
+  const [waBlocked, setWaBlocked] = useState(false);     // browser blocked the WhatsApp pop-up
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const tick = () => setNow(new Date());
@@ -401,63 +403,106 @@ const next = async () => {
   const payOk = /^[6-9]\d{9}$/.test(payMobile.trim());
   // Only possible after the payment is marked done AND a valid 10-digit paying mobile number is entered
  
-const sendOrder = async () => {
-  if (!paid || !payOk || loading) return;
+  const waUrl = () => `https://wa.me/${WA}?text=${encodeURIComponent(msg())}`;
 
-  setLoading(true);
-  setOrderError("");
-
-  try {
-    await postOrder("பணம் செலுத்தப்பட்டது");
-
-    window.open(
-      `https://wa.me/${WA}?text=${encodeURIComponent(msg())}`,
-      "_blank"
-    );
-
+  // ---- After the order is saved: keep a "please wait" overlay up until WhatsApp takes over the screen,
+  // ---- then show the confirmation when the customer comes back, and finally return to the home page.
+  const HOME_DELAY = 6000;
+  const waWatch = useRef({ timer: null, off: null });
+  const stopWaWatch = () => {
+    clearTimeout(waWatch.current.timer);
+    if (waWatch.current.off) waWatch.current.off();
+    waWatch.current = { timer: null, off: null };
+  };
+  const showConfirmation = (blocked = false) => {
+    stopWaWatch();
+    setWaBlocked(blocked);
+    setConfirming(false);
+    setLoading(false);
     setSheet(false);
     setDone(true);
     window.scrollTo({ top: 0 });
-  } catch (e) {
-    console.error("Payment update failed:", e);
-    setOrderError(e.message || "ஆர்டர் புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+  const goHome = () => {
+    stopWaWatch();
+    setDone(false);
+    setConfirming(false);
+    setCart({});
+    setStep(1);
+    setPaid(false);
+    setPayMobile("");
+    setWaBlocked(false);
+    window.scrollTo({ top: 0 });
+  };
 
-  // Cash on delivery: no payment step - save the order and open WhatsApp straight away
-  const placeCod = async () => {
-    if (loading || !validate()) return;
-    const stockErr = stockError();
-    if (stockErr) { setOrderError(stockErr); return; }
+  // Confirmation screen -> home page automatically, but only while the customer is actually looking at it
+  useEffect(() => {
+    if (!done || waBlocked) return;
+    let t;
+    const start = () => { clearTimeout(t); t = setTimeout(goHome, HOME_DELAY); };
+    const onVis = () => { if (document.visibilityState === "visible") start(); else clearTimeout(t); };
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearTimeout(t); document.removeEventListener("visibilitychange", onVis); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done, waBlocked]);
 
+  // Save the order, then hand over to WhatsApp (shared by online payment and COD)
+  const completeOrder = async (status, failMsg) => {
+    setConfirming(true);
     setLoading(true);
     setOrderError("");
     try {
-      await postOrder(COD_STATUS);
-      window.open(`https://wa.me/${WA}?text=${encodeURIComponent(msg())}`, "_blank");
-      setSheet(false);
-      setDone(true);
-      window.scrollTo({ top: 0 });
+      await postOrder(status);
     } catch (e) {
-      console.error("COD order failed:", e);
-      setOrderError(e.message || "ஆர்டரைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.");
-    } finally {
+      console.error("Order failed:", e);
+      setConfirming(false);
       setLoading(false);
+      setOrderError(e.message || failMsg);
+      return;
     }
+
+    // WhatsApp opening makes this page "hidden"; coming back makes it "visible" again
+    let left = false;
+    const onVis = () => {
+      if (document.visibilityState === "hidden") left = true;
+      else if (left) showConfirmation(false);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    waWatch.current = {
+      // fallback: if the page never goes to the background, don't keep the customer waiting
+      timer: setTimeout(() => { if (!left) showConfirmation(false); }, 8000),
+      off: () => document.removeEventListener("visibilitychange", onVis)
+    };
+
+    const w = window.open(waUrl(), "_blank");
+    if (!w) showConfirmation(true); // popup blocked: show the confirmation with a WhatsApp button instead
+  };
+
+  const sendOrder = () => {
+    if (!paid || !payOk || loading) return;
+    completeOrder("பணம் செலுத்தப்பட்டது", "ஆர்டர் புதுப்பிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.");
+  };
+
+  // Cash on delivery: no payment step - save the order and open WhatsApp straight away
+  const placeCod = () => {
+    if (loading || !validate()) return;
+    const stockErr = stockError();
+    if (stockErr) { setOrderError(stockErr); return; }
+    completeOrder(COD_STATUS, "ஆர்டரைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.");
   };
 
   if (done) return (
     <div className="wrap" style={{ textAlign: "center", paddingTop: 60 }}>
       <div style={{ fontSize: 56 }}>✅</div>
       <h2>நன்றி, {f.name}!</h2>
-      <p>உங்கள் முன்பதிவு வாட்ஸ்அப்பில் தயாராக உள்ளது. {payMode === "cod" ? "செய்தியை அனுப்பி ஆர்டரை உறுதிசெய்யவும்." : "செய்தியை அனுப்பி, பணம் செலுத்திய ஸ்கிரீன்ஷாட்டையும் பகிர்ந்து உறுதிசெய்யவும்."}</p>
+      <p>உங்கள் ஆர்டர் பதிவு செய்யப்பட்டது. {waBlocked ? "கீழே உள்ள “வாட்ஸ்அப் திறக்க” பொத்தானை அழுத்தி செய்தியை அனுப்பவும். " : ""}{payMode === "cod" ? "செய்தியை அனுப்பி ஆர்டரை உறுதிசெய்யவும்." : "செய்தியை அனுப்பி, பணம் செலுத்திய ஸ்கிரீன்ஷாட்டையும் பகிர்ந்து உறுதிசெய்யவும்."}</p>
       <p><b>டெலிவரி:</b> {sunStr}, காலை 9.30 – 11.30</p>
       <div className="cta" style={{ justifyContent: "center" }}>
-        <button className="btn" onClick={() => { setDone(false); setCart({}); }}>புதிய ஆர்டர்</button>
-        <a className="btn wa" href={`https://wa.me/${WA}`} target="_blank" rel="noreferrer">வாட்ஸ்அப் திறக்க</a>
+        <button className="btn" onClick={goHome}>புதிய ஆர்டர்</button>
+        <a className="btn wa" href={waUrl()} target="_blank" rel="noreferrer">வாட்ஸ்அப் திறக்க</a>
       </div>
+      {!waBlocked && <p style={{ marginTop: 14, fontSize: ".85rem", opacity: .75 }}>சில விநாடிகளில் முகப்புப் பக்கத்திற்குத் திரும்புகிறது…</p>}
     </div>
   );
 
@@ -546,6 +591,15 @@ const sendOrder = async () => {
         </div>
       </footer>
 
+      {confirming && (
+        <div className="confirmov" role="alertdialog" aria-modal="true" aria-live="assertive">
+          <div className="loadcard">
+            <span className="spin lg" />
+            <p>காத்திருக்கவும், உங்கள் ஆர்டர் உறுதிசெய்யப்படுகிறது…<br /><small>வாட்ஸ்அப் திறக்கும் வரை இந்தப் பக்கத்தை மூட வேண்டாம்.</small></p>
+          </div>
+        </div>
+      )}
+
       {showTop && !sheet && (
         <button className={`totop ${items.length > 0 ? "withcart" : ""}`} onClick={goFirstProduct} aria-label="முதல் பொருளுக்குச் செல்ல" title="முதல் பொருளுக்குச் செல்ல">🛍️</button>
       )}
@@ -564,9 +618,9 @@ const sendOrder = async () => {
       {sheet && (
         <div className="modal" onClick={() => setSheet(false)}>
           <div className="panel" ref={panelRef} onClick={e => e.stopPropagation()}>
-            {loading && (
+            {loading && !confirming && (
               <div className="loadov" role="status" aria-live="polite">
-                <div className="loadcard"><span className="spin lg" /><p>{payMode === "cod" ? "ஆர்டர் சேமிக்கப்படுகிறது…" : "பணம் செலுத்தும் பக்கம் தயாராகிறது…"}<br />சற்று காத்திருக்கவும்</p></div>
+                <div className="loadcard"><span className="spin lg" /><p>பணம் செலுத்தும் பக்கம் தயாராகிறது…<br />சற்று காத்திருக்கவும்</p></div>
               </div>
             )}
             <div className="phead">
